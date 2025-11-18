@@ -66,7 +66,7 @@ class UTNet(nn.Module):
         # Decoder
         self.up4 = nn.ConvTranspose2d(base_channels * 8, base_channels * 4, 2, stride=2)
         self.dec4 = nn.Sequential(
-            nn.Conv2d(embed_dim + base_channels * 8, base_channels * 4, 3, padding=1),
+            nn.Conv2d(base_channels * 8 + base_channels * 8, base_channels * 4, 3, padding=1),
             nn.BatchNorm2d(base_channels * 4),
             nn.ReLU(inplace=True),
             nn.Conv2d(base_channels * 4, base_channels * 4, 3, padding=1),
