@@ -68,6 +68,11 @@ class DiffusionModel(L.LightningModule):
         num_ensemble: int = 1,
         use_ema: bool = True,
         ema_decay: float = 0.9999,
+        soft_label_type: str = 'none',
+        soft_label_cache: bool = True,
+        soft_label_fg_max: int = 11,
+        soft_label_thickness_max: int = 13,
+        soft_label_kernel_ratio: float = 0.1,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -77,6 +82,16 @@ class DiffusionModel(L.LightningModule):
             experiment_name = f"{data_name}/{arch_name}"
         self.experiment_name = experiment_name
         self.data_name = data_name
+        
+        # Initialize soft label generator
+        from src.data.transforms import SoftLabelGenerator
+        self.soft_label_generator = SoftLabelGenerator(
+            method=soft_label_type,
+            cache=soft_label_cache,
+            fg_max=soft_label_fg_max,
+            thickness_max=soft_label_thickness_max,
+            kernel_ratio=soft_label_kernel_ratio,
+        )
         
         # Create diffusion model
         if arch_name not in MODEL_REGISTRY:
@@ -112,7 +127,23 @@ class DiffusionModel(L.LightningModule):
             'iou': JaccardIndex(num_classes=num_classes, average='macro'),
         })
         
+        # Test metrics (separate instance to avoid contamination)
+        self.test_metrics = MetricCollection({
+            'dice': Dice(num_classes=num_classes, average='macro'),
+            'precision': Precision(num_classes=num_classes, average='macro'),
+            'recall': Recall(num_classes=num_classes, average='macro'),
+            'specificity': Specificity(num_classes=num_classes, average='macro'),
+            'iou': JaccardIndex(num_classes=num_classes, average='macro'),
+        })
+        
         self.vessel_metrics = MetricCollection({
+            'cldice': clDice(),
+            'betti_0_error': Betti0Error(),
+            'betti_1_error': Betti1Error(),
+        })
+        
+        # Test vessel metrics (separate instance)
+        self.test_vessel_metrics = MetricCollection({
             'cldice': clDice(),
             'betti_0_error': Betti0Error(),
             'betti_1_error': Betti1Error(),
@@ -166,15 +197,20 @@ class DiffusionModel(L.LightningModule):
         if labels.max() > 1:
             labels = labels / 255.0
         
-        # Get probability map if available (for maskdiff)
+        # Generate soft labels as denoising target
+        # Get sample IDs for caching (if available)
+        sample_ids = batch.get('name', None)
+        
+        # Generate soft labels (returns binary labels if method='none')
+        soft_labels = self.soft_label_generator(labels, sample_ids)
+        
+        # Use soft labels as x_0 target in diffusion forward process
+        target_labels = soft_labels
+        
+        # Get probability map if available (for maskdiff - this is for sampling guide, not denoising target)
         prob_img = None
-        if 'label_prob' in batch:
-            prob_img = batch['label_prob']
-            if not hasattr(self, '_printed_prob_map'):
-                print(f"Using probability map from batch: {prob_img.shape}") #
-                self._printed_prob_map = True
-        elif self.hparams.arch_name == 'maskdiff':
-            # Generate boundary uncertainty map from label
+        if self.hparams.arch_name == 'maskdiff':
+            # Generate boundary uncertainty map from label for sampling guide
             # Based on generate_uncertainty.py: extract_boundary_uncertainty_map
             prob_img_list = []
             for i in range(labels.shape[0]):
@@ -194,8 +230,8 @@ class DiffusionModel(L.LightningModule):
             
             prob_img = torch.stack(prob_img_list, dim=0).to(labels.device).float()
         
-        # Compute diffusion loss
-        loss = self(labels, images, prob_img)
+        # Compute diffusion loss with soft labels as target
+        loss = self(target_labels, images, prob_img)
         
         # Log
         self.log('train/loss', loss, prog_bar=True)
@@ -290,9 +326,9 @@ class DiffusionModel(L.LightningModule):
             pred_masks = pred_masks.squeeze(1)
         preds = (pred_masks > 0.5).long()
         
-        # Compute metrics
-        general_metrics = self.val_metrics(preds, labels)
-        vessel_metrics = self.vessel_metrics(preds, labels)
+        # Compute metrics (use test_metrics, not val_metrics!)
+        general_metrics = self.test_metrics(preds, labels)
+        vessel_metrics = self.test_vessel_metrics(preds, labels)
         
         # Log
         self.log_dict({'test/' + k: v for k, v in general_metrics.items()})

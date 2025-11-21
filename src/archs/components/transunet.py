@@ -87,8 +87,9 @@ class TransUNet(nn.Module):
         
         # CNN encoder for skip connections
         skip_connections = []
+        x_cnn = x
         for i, encoder in enumerate(self.cnn_encoder):
-            x_cnn = encoder(x_cnn if i > 0 else x)
+            x_cnn = encoder(x_cnn)
             skip_connections.append(x_cnn)
             if i < len(self.cnn_encoder) - 1:
                 x_cnn = self.pool(x_cnn)

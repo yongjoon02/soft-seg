@@ -9,6 +9,13 @@ model:
   use_ema: true
   ema_decay: 0.9999
   num_ensemble: 1
+  # Soft label generation settings (as denoising target in forward diffusion)
+  # Options: 'none' (binary), 'boundary', 'thickness', 'sauna' (boundary+thickness)
+  soft_label_type: none
+  soft_label_cache: true
+  soft_label_fg_max: 11
+  soft_label_thickness_max: 13
+  soft_label_kernel_ratio: 0.1
 
 data:
   train_manual_dir: data/ROSSA/train_manual

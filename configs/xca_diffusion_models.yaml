@@ -1,4 +1,4 @@
-# Configuration for diffusion models
+# XCA 데이터셋 Diffusion 모델 학습 설정
 model:
   arch_name: segdiff
   image_size: 224
@@ -9,8 +9,8 @@ model:
   use_ema: true
   ema_decay: 0.9999
   num_ensemble: 1
-  # Soft label generation settings (as denoising target in forward diffusion)
-  # Options: 'none' (binary), 'boundary', 'thickness', 'sauna' (boundary+thickness)
+  # 소프트 라벨 생성 설정 (forward diffusion에서 디노이징 타겟으로 사용)
+  # 옵션: 'none' (이진), 'boundary', 'thickness', 'sauna' (경계+두께)
   soft_label_type: none
   soft_label_cache: true
   soft_label_fg_max: 11
@@ -18,21 +18,21 @@ model:
   soft_label_kernel_ratio: 0.1
 
 data:
-  name: octa500_3m
-  train_dir: data/OCTA500_3M/train
-  val_dir: data/OCTA500_3M/val
-  test_dir: data/OCTA500_3M/test
-  crop_size: 224
+  name: xca
+  train_dir: data/xca_dataset_split/train
+  val_dir: data/xca_dataset_split/val
+  test_dir: data/xca_dataset_split/test
+  crop_size: 320
   train_bs: 4
-  num_samples_per_image: 8
+  num_samples_per_image: 4
 
 trainer:
   max_epochs: 400
   accelerator: gpu
   devices: 1
   precision: 32
-  log_every_n_steps: 50
-  check_val_every_n_epoch: 10
+  log_every_n_steps: 10
+  check_val_every_n_epoch: 20
   accumulate_grad_batches: 2
   gradient_clip_val: 1.0
   callbacks:
@@ -47,5 +47,5 @@ trainer:
     class_path: lightning.pytorch.loggers.TensorBoardLogger
     init_args:
       save_dir: lightning_logs
-      name: octa500_3m
+      name: xca
       version: null

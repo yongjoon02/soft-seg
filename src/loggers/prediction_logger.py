@@ -31,6 +31,9 @@ class PredictionLogger(Logger):
         
         self._name = name
         self._version = version
+        
+        # Store all metrics for computing average
+        self._all_metrics = []
     
     def _init_csv(self):
         """Initialize CSV file with headers."""
@@ -119,6 +122,9 @@ class PredictionLogger(Logger):
     
     def _save_sample_metrics(self, sample_name, metrics):
         """Save metrics for a single sample to CSV."""
+        # Store metrics for averaging later
+        self._all_metrics.append(metrics)
+        
         with open(self.metrics_file, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([
@@ -137,5 +143,35 @@ class PredictionLogger(Logger):
     
     @rank_zero_only
     def finalize(self, status):
-        """Finalize logging."""
-        pass
+        """Finalize logging - compute and append average metrics."""
+        if len(self._all_metrics) > 0:
+            # Compute averages
+            metric_keys = ['dice', 'iou', 'precision', 'recall', 'specificity', 
+                          'cldice', 'connectivity', 'density_error', 
+                          'betti_0_error', 'betti_1_error']
+            
+            avg_metrics = {}
+            for key in metric_keys:
+                values = [m.get(key, 0.0) for m in self._all_metrics]
+                # Convert tensor to float if needed
+                values = [float(v) if isinstance(v, torch.Tensor) else v for v in values]
+                avg_metrics[key] = np.mean(values)
+            
+            # Append average row to CSV
+            with open(self.metrics_file, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    'AVERAGE',
+                    avg_metrics.get('dice', 0.0),
+                    avg_metrics.get('iou', 0.0),
+                    avg_metrics.get('precision', 0.0),
+                    avg_metrics.get('recall', 0.0),
+                    avg_metrics.get('specificity', 0.0),
+                    avg_metrics.get('cldice', 0.0),
+                    avg_metrics.get('connectivity', 0.0),
+                    avg_metrics.get('density_error', 0.0),
+                    avg_metrics.get('betti_0_error', 0.0),
+                    avg_metrics.get('betti_1_error', 0.0),
+                ])
+            
+            print(f"\n✅ Average metrics saved to: {self.metrics_file}")

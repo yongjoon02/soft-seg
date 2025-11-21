@@ -28,6 +28,20 @@ MODEL_REGISTRY = {
 }
 
 
+class ModelWrapper(nn.Module):
+    """Wrapper to handle models that return dict outputs (e.g., UNet3Plus)."""
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+    
+    def forward(self, x):
+        output = self.model(x)
+        # If model returns dict, extract main output
+        if isinstance(output, dict):
+            return output['main_out']
+        return output
+
+
 class SupervisedModel(L.LightningModule):
     """Supervised segmentation model with sliding window inference."""
     
@@ -50,6 +64,7 @@ class SupervisedModel(L.LightningModule):
             experiment_name = f"{data_name}/{arch_name}"
         self.experiment_name = experiment_name
         self.data_name = data_name
+        self.arch_name = arch_name
         
         # 모델 생성
         if arch_name not in MODEL_REGISTRY:
@@ -59,9 +74,12 @@ class SupervisedModel(L.LightningModule):
         
         # TransUNet은 img_size 필요
         if arch_name == 'transunet':
-            self.model = model_cls(in_channels=in_channels, num_classes=num_classes, img_size=img_size)
+            base_model = model_cls(in_channels=in_channels, num_classes=num_classes, img_size=img_size)
         else:
-            self.model = model_cls(in_channels=in_channels, num_classes=num_classes)
+            base_model = model_cls(in_channels=in_channels, num_classes=num_classes)
+        
+        # Wrap model to handle dict outputs
+        self.model = ModelWrapper(base_model)
         
         # Sliding window inferer for validation (128x128 patches)
         self.inferer = SlidingWindowInferer(
@@ -83,7 +101,23 @@ class SupervisedModel(L.LightningModule):
             'iou': JaccardIndex(num_classes=num_classes, average='macro'),
         })
         
+        # Test metrics (separate instance to avoid contamination)
+        self.test_metrics = MetricCollection({
+            'dice': Dice(num_classes=num_classes, average='macro'),
+            'precision': Precision(num_classes=num_classes, average='macro'),
+            'recall': Recall(num_classes=num_classes, average='macro'),
+            'specificity': Specificity(num_classes=num_classes, average='macro'),
+            'iou': JaccardIndex(num_classes=num_classes, average='macro'),
+        })
+        
         self.vessel_metrics = MetricCollection({
+            'cldice': clDice(),
+            'betti_0_error': Betti0Error(),
+            'betti_1_error': Betti1Error(),
+        })
+        
+        # Test vessel metrics (separate instance)
+        self.test_vessel_metrics = MetricCollection({
             'cldice': clDice(),
             'betti_0_error': Betti0Error(),
             'betti_1_error': Betti1Error(),
@@ -100,12 +134,8 @@ class SupervisedModel(L.LightningModule):
             labels = labels.squeeze(1)  # (B, 1, H, W) -> (B, H, W)
         labels = labels.long()
         
-        # Forward
+        # Forward (ModelWrapper handles dict outputs)
         logits = self(images)
-        
-        # UNet3Plus returns dict
-        if isinstance(logits, dict):
-            logits = logits['main_out']
         
         # Compute loss
         loss = self.loss_fn(logits, labels)
@@ -123,12 +153,8 @@ class SupervisedModel(L.LightningModule):
             labels = labels.squeeze(1)
         labels = labels.long()
         
-        # Sliding window inference
+        # Sliding window inference (ModelWrapper handles dict outputs)
         logits = self.inferer(images, self.model)
-        
-        # UNet3Plus returns dict
-        if isinstance(logits, dict):
-            logits = logits['main_out']
         
         # Compute loss
         loss = self.loss_fn(logits, labels)
@@ -160,21 +186,17 @@ class SupervisedModel(L.LightningModule):
             labels = labels.squeeze(1)
         labels = labels.long()
         
-        # Sliding window inference
+        # Sliding window inference (ModelWrapper handles dict outputs)
         logits = self.inferer(images, self.model)
-        
-        # UNet3Plus returns dict
-        if isinstance(logits, dict):
-            logits = logits['main_out']
         
         # Compute metrics
         preds = torch.argmax(logits, dim=1)
         
-        # General metrics
-        general_metrics = self.val_metrics(preds, labels)
+        # General metrics (use test_metrics, not val_metrics!)
+        general_metrics = self.test_metrics(preds, labels)
         
-        # Vessel-specific metrics
-        vessel_metrics = self.vessel_metrics(preds, labels)
+        # Vessel-specific metrics (use test_vessel_metrics!)
+        vessel_metrics = self.test_vessel_metrics(preds, labels)
 
         # Log
         self.log_dict({'test/' + k: v for k, v in general_metrics.items()})

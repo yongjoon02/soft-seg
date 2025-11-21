@@ -1,69 +1,98 @@
+"""UNet3Plus: A Full-Scale Connected UNet for Medical Image Segmentation.
+
+Official PyTorch implementation based on:
+https://github.com/ZJUGiveLab/UNet-Version
+
+Paper: "UNet 3+: A Full-Scale Connected UNet for Medical Image Segmentation"
+"""
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from typing import Dict, List
 
-class unetConv2(nn.Module):
-    def __init__(self, in_size, out_size, is_batchnorm, n=2, ks=3, stride=1, padding=1):
-        super(unetConv2, self).__init__()
+
+class UNetConv2(nn.Module):
+    """Double convolution block with optional batch normalization."""
+    
+    def __init__(
+        self, 
+        in_channels: int, 
+        out_channels: int, 
+        is_batchnorm: bool = True, 
+        n: int = 2, 
+        kernel_size: int = 3, 
+        stride: int = 1, 
+        padding: int = 1
+    ):
+        super().__init__()
         self.n = n
-        self.ks = ks
-        self.stride = stride
-        self.padding = padding
-        s = stride
-        p = padding
+        
         if is_batchnorm:
             for i in range(1, n + 1):
-                conv = nn.Sequential(nn.Conv2d(in_size, out_size, ks, s, p),
-                                     nn.BatchNorm2d(out_size),
-                                     nn.ReLU(inplace=True), )
-                setattr(self, 'conv%d' % i, conv)
-                in_size = out_size
-
+                conv = nn.Sequential(
+                    nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding),
+                    nn.BatchNorm2d(out_channels),
+                    nn.ReLU(inplace=True),
+                )
+                setattr(self, f'conv{i}', conv)
+                in_channels = out_channels
         else:
             for i in range(1, n + 1):
-                conv = nn.Sequential(nn.Conv2d(in_size, out_size, ks, s, p),
-                                     nn.ReLU(inplace=True), )
-                setattr(self, 'conv%d' % i, conv)
-                in_size = out_size
+                conv = nn.Sequential(
+                    nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding),
+                    nn.ReLU(inplace=True),
+                )
+                setattr(self, f'conv{i}', conv)
+                in_channels = out_channels
 
-        # initialise the blocks
-        # for m in self.children():
-        #     init_weights(m, init_type='kaiming')
-
-    def forward(self, inputs):
-        x = inputs
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         for i in range(1, self.n + 1):
-            conv = getattr(self, 'conv%d' % i)
+            conv = getattr(self, f'conv{i}')
             x = conv(x)
-
         return x
 
 class UNet3Plus(nn.Module):
+    """UNet 3+ architecture with full-scale skip connections.
+    
+    Args:
+        in_channels: Number of input channels (default: 3)
+        num_classes: Number of output classes (default: 2)
+        feature_scale: Feature scaling factor (not used, for compatibility)
+        is_deconv: Use deconvolution (not used, always uses ConvTranspose2d)
+        is_batchnorm: Use batch normalization (default: True)
+    """
 
-    def __init__(self, in_channels=3, num_classes=2, feature_scale=4, is_deconv=True, is_batchnorm=True):
-        super(UNet3Plus, self).__init__()
+    def __init__(
+        self, 
+        in_channels: int = 3, 
+        num_classes: int = 2, 
+        feature_scale: int = 4, 
+        is_deconv: bool = True, 
+        is_batchnorm: bool = True
+    ):
+        super().__init__()
         self.is_deconv = is_deconv
         self.in_channels = in_channels
         self.is_batchnorm = is_batchnorm
         self.feature_scale = feature_scale
 
         filters = [64, 128, 256, 512, 1024]
-       # self.base_encoder = LWT_encoder()
+        
         ## -------------Encoder--------------
-        self.conv1 = unetConv2(self.in_channels, filters[0], self.is_batchnorm)
+        self.conv1 = UNetConv2(self.in_channels, filters[0], self.is_batchnorm)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
 
-        self.conv2 = unetConv2(filters[0], filters[1], self.is_batchnorm)
+        self.conv2 = UNetConv2(filters[0], filters[1], self.is_batchnorm)
         self.maxpool2 = nn.MaxPool2d(kernel_size=2)
 
-        self.conv3 = unetConv2(filters[1], filters[2], self.is_batchnorm)
+        self.conv3 = UNetConv2(filters[1], filters[2], self.is_batchnorm)
         self.maxpool3 = nn.MaxPool2d(kernel_size=2)
 
-        self.conv4 = unetConv2(filters[2], filters[3], self.is_batchnorm)
+        self.conv4 = UNetConv2(filters[2], filters[3], self.is_batchnorm)
         self.maxpool4 = nn.MaxPool2d(kernel_size=2)
 
-        self.conv5 = unetConv2(filters[3], filters[4], self.is_batchnorm)
+        self.conv5 = UNetConv2(filters[3], filters[4], self.is_batchnorm)
 
         ## -------------Decoder--------------
         self.CatChannels = filters[0]
@@ -325,23 +354,50 @@ class UNet3Plus(nn.Module):
         #d2 = self.upscore2(d2) # 128->256
 
         d1 = self.outconv1(hd1) # 256
-        output = dict()
+        
+        # Return as dictionary with main output and auxiliary outputs
+        output = {}
         aux_feature = [d2, d3, d4, d5]
         size = d1.size()[2:]
-        # if self.aux:
-        # deep sup
+        
+        # Deep supervision: upsample auxiliary outputs to match main output size
         aux_out = []
         for a in aux_feature:
             a = F.interpolate(a, size, mode='bilinear', align_corners=True)
             aux_out.append(a)
-        output.update({"aux_out": aux_out})
-        output["main_out"] = d1
+        
+        output['aux_out'] = aux_out
+        output['main_out'] = d1
         return output
-    
-'''
-    UNet 3+ with deep supervision
+
+
+# Note: The following classes (UNet_3Plus_DeepSup, UNet_3Plus_DeepSup_CGM) 
+# are kept for reference but are not used in the current training pipeline.
+# They would need init_weights function and numpy import to work properly.
+
 '''
 class UNet_3Plus_DeepSup(nn.Module):
+    """UNet 3+ with deep supervision - NOT CURRENTLY USED"""
+    # ... (commented out to avoid init_weights dependency)
+    pass
+
+
+class UNet_3Plus_DeepSup_CGM(nn.Module):
+    """UNet 3+ with deep supervision and class-guided module - NOT CURRENTLY USED"""
+    # ... (commented out to avoid init_weights and numpy dependencies)
+    pass
+'''
+
+
+if __name__ == "__main__":
+    net = UNet3Plus(in_channels=1, num_classes=2)
+    inputs = torch.randn(1, 1, 224, 224)
+    outputs = net(inputs)
+    if isinstance(outputs, dict):
+        print("Main output shape:", outputs['main_out'].shape)
+        print("Auxiliary outputs:", [a.shape for a in outputs['aux_out']])
+    else:
+        print("Output shape:", outputs.shape)
     def __init__(self, in_channels=3, num_classes=1, feature_scale=4, is_deconv=True, is_batchnorm=True):
         super(UNet_3Plus_DeepSup, self).__init__()
         self.is_deconv = is_deconv
