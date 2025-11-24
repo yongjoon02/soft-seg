@@ -1,7 +1,6 @@
 """Diffusion models for vessel segmentation.
-Based on supervised_model.py structure with SegDiff and MedSegDiff.
+Based on supervised_model.py structure with MedSegDiff and BerDiff.
 """
-import autorootcwd
 import numpy as np
 import torch
 import torch.nn as nn
@@ -12,40 +11,18 @@ from torchmetrics import MetricCollection
 from tqdm import tqdm
 from copy import deepcopy
 
-from src.archs.components.gaussian_diffusion import (
-    create_segdiff, create_medsegdiff
-)
-from src.archs.components.cold_diffusion import (
-    create_colddiff
-)
-from src.archs.components.proposed_diffusion import (
-    create_proposed_diff
-)
-from src.archs.components.proposed_diffusion_v2 import (
-    create_proposed_diff_v2
-)
-from src.archs.components.binomial_diffusion import (
-    create_berdiff
-)
+from src.archs.components.gaussian_diffusion import create_medsegdiff
+from src.archs.components.binomial_diffusion import create_berdiff
 
 from src.metrics import (
     Dice, Precision, Recall, Specificity, JaccardIndex,
     clDice, Betti0Error, Betti1Error
 )
-from src.data.generate_uncertainty import (
-    extract_boundary_uncertainty_map,
-    ensure_binary_gt
-)
 
 
 MODEL_REGISTRY = {
-    # Gaussian Diffusion models
-    'segdiff': create_segdiff,
+    # Gaussian Diffusion model
     'medsegdiff': create_medsegdiff,
-    # Cold Diffusion models
-    'colddiff': create_colddiff,
-    'maskdiff': create_proposed_diff, # proposed one
-    'maskdiff_v2': create_proposed_diff_v2, # proposed one with SDF
     # Bernoulli Diffusion model
     'berdiff': create_berdiff,
 }
@@ -149,19 +126,14 @@ class DiffusionModel(L.LightningModule):
             'betti_1_error': Betti1Error(),
         })
     
-    def forward(self, img: torch.Tensor, cond_img: torch.Tensor, prob_img: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, img: torch.Tensor, cond_img: torch.Tensor) -> torch.Tensor:
         """Forward pass - returns loss during training.
         
         Args:
             img: Ground truth segmentation mask
             cond_img: Conditional image
-            prob_img: Probability map (optional, for maskdiff)
         """
-        # Check if model needs prob_img (maskdiff)
-        if self.hparams.arch_name == 'maskdiff' and prob_img is not None:
-            return self.diffusion_model(img, cond_img, prob_img)
-        else:
-            return self.diffusion_model(img, cond_img)
+        return self.diffusion_model(img, cond_img)
     
     def update_ema(self):
         """Update EMA model parameters."""
@@ -207,31 +179,8 @@ class DiffusionModel(L.LightningModule):
         # Use soft labels as x_0 target in diffusion forward process
         target_labels = soft_labels
         
-        # Get probability map if available (for maskdiff - this is for sampling guide, not denoising target)
-        prob_img = None
-        if self.hparams.arch_name == 'maskdiff':
-            # Generate boundary uncertainty map from label for sampling guide
-            # Based on generate_uncertainty.py: extract_boundary_uncertainty_map
-            prob_img_list = []
-            for i in range(labels.shape[0]):
-                # Convert to numpy for uncertainty extraction
-                label_np = labels[i, 0].cpu().numpy()
-                label_binary = ensure_binary_gt(label_np)
-                
-                # Extract boundary uncertainty map
-                uncertainty_map, fg_max = extract_boundary_uncertainty_map(label_binary)
-                
-                # Convert to [0, 1] probability map
-                # uncertainty_map is in [-1, 1], convert to [0, 1]
-                prob_map = (uncertainty_map + 1.0) / 2.0
-                prob_map = np.clip(prob_map, 0.1, 0.9)  # Avoid extreme probabilities
-                
-                prob_img_list.append(torch.from_numpy(prob_map).unsqueeze(0))
-            
-            prob_img = torch.stack(prob_img_list, dim=0).to(labels.device).float()
-        
         # Compute diffusion loss with soft labels as target
-        loss = self(target_labels, images, prob_img)
+        loss = self(target_labels, images)
         
         # Log
         self.log('train/loss', loss, prog_bar=True)

@@ -7,10 +7,7 @@ import lightning.pytorch as L
 from monai.inferers import SlidingWindowInferer
 from torchmetrics import MetricCollection
 
-from src.archs.components import (
-    CENet, CSNet, AACAUNet, UNet3Plus,
-    VesselNet, TransUNet, DSCNet
-)
+from src.archs.components import CSNet, DSCNet
 from src.metrics import (
     Dice, Precision, Recall, Specificity, JaccardIndex,
     clDice, Betti0Error, Betti1Error
@@ -18,12 +15,7 @@ from src.metrics import (
 
 
 MODEL_REGISTRY = {
-    'cenet': CENet,
     'csnet': CSNet,
-    'aacaunet': AACAUNet,
-    'unet3plus': UNet3Plus,
-    'vesselnet': VesselNet,
-    'transunet': TransUNet,
     'dscnet': DSCNet,
 }
 
@@ -72,11 +64,8 @@ class SupervisedModel(L.LightningModule):
         
         model_cls = MODEL_REGISTRY[arch_name]
         
-        # TransUNet은 img_size 필요
-        if arch_name == 'transunet':
-            base_model = model_cls(in_channels=in_channels, num_classes=num_classes, img_size=img_size)
-        else:
-            base_model = model_cls(in_channels=in_channels, num_classes=num_classes)
+        # Create model instance
+        base_model = model_cls(in_channels=in_channels, num_classes=num_classes)
         
         # Wrap model to handle dict outputs
         self.model = ModelWrapper(base_model)

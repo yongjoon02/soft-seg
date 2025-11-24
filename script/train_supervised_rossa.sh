@@ -5,7 +5,7 @@
 CONFIG="configs/rossa_supervised_models.yaml"
 
 # Models to train
-MODELS=("cenet" "csnet" "aacaunet" "unet3plus" "vesselnet" "transunet" "dscnet")
+MODELS=("csnet" "dscnet")
 
 # Run each model in parallel
 for model in "${MODELS[@]}"; do

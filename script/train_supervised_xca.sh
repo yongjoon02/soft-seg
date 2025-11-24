@@ -5,7 +5,7 @@
 CONFIG="configs/xca_supervised_models.yaml"
 
 # Models to train with GPU assignment
-MODELS=("cenet" "csnet" "aacaunet" "unet3plus" "vesselnet" "transunet" "dscnet")
+MODELS=("csnet" "dscnet")
 GPUS=(0 1 2 3 4 5 6)  # Assign each model to different GPU
 
 # Run each model in parallel on different GPUs

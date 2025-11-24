@@ -5,7 +5,7 @@
 CONFIG="configs/xca_diffusion_models.yaml"
 
 # Models to train with GPU assignment
-MODELS=("segdiff" "medsegdiff" "berdiff" "colddiff" "maskdiff" "maskdiff_v2")
+MODELS=("medsegdiff" "berdiff")
 GPUS=(0 1 2 3 4 0)  # Assign each model to different GPU (maskdiff_v2 shares GPU 0)
 
 # Run each model in parallel on different GPUs

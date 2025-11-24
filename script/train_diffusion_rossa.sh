@@ -5,7 +5,7 @@
 CONFIG="configs/rossa_diffusion_models.yaml"
 
 # Models to train
-MODELS=("segdiff" "medsegdiff" "berdiff" "colddiff" "maskdiff")
+MODELS=("medsegdiff" "berdiff")
 
 # Run each model in parallel
 for model in "${MODELS[@]}"; do

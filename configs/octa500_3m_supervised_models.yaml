@@ -1,6 +1,7 @@
-# Test configuration for supervised training
+# OCTA500-3M Supervised Model Configuration
+# Available models: csnet, dscnet
 model:
-  arch_name: cenet
+  arch_name: csnet  # Options: csnet (fast), dscnet (accurate)
   in_channels: 1
   num_classes: 2
   img_size: 224

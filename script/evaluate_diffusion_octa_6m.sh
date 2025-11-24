@@ -2,7 +2,7 @@
 # Evaluate all diffusion models on OCTA500_6M dataset
 
 # Models to evaluate
-MODELS="segdiff,medsegdiff,berdiff,colddiff,maskdiff"
+MODELS="medsegdiff,berdiff"
 
 echo "Evaluating all diffusion models on OCTA500_6M dataset..."
 

@@ -1,6 +1,6 @@
 # XCA 데이터셋 Diffusion 모델 학습 설정
 model:
-  arch_name: segdiff
+  arch_name: medsegdiff  # Options: medsegdiff (stable), berdiff (binary-optimized)
   image_size: 224
   dim: 32
   timesteps: 100

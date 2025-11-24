@@ -1,6 +1,6 @@
 # Configuration for diffusion models
 model:
-  arch_name: segdiff
+  arch_name: medsegdiff  # Options: medsegdiff (stable), berdiff (binary-optimized)
   image_size: 224
   dim: 32
   timesteps: 50

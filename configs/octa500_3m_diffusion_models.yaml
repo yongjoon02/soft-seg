@@ -1,6 +1,7 @@
-# Configuration for diffusion models
+# OCTA500-3M Diffusion Model Configuration
+# Available models: medsegdiff (Gaussian), berdiff (Bernoulli)
 model:
-  arch_name: segdiff
+  arch_name: medsegdiff  # Options: medsegdiff (stable), berdiff (binary-optimized)
   image_size: 224
   dim: 32
   timesteps: 100

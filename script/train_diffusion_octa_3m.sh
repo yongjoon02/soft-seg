@@ -1,11 +1,12 @@
 #!/bin/bash
-# Train diffusion models in parallel
+# Train diffusion models on OCTA500-3M dataset
+# Available models: medsegdiff (Gaussian), berdiff (Bernoulli)
 
 # Base config
 CONFIG="configs/octa500_3m_diffusion_models.yaml"
 
 # Models to train
-MODELS=("segdiff" "medsegdiff" "berdiff" "colddiff" "maskdiff" "maskdiff_v2")
+MODELS=("medsegdiff" "berdiff")
 
 # Run each model in parallel
 for model in "${MODELS[@]}"; do

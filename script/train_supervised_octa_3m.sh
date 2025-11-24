@@ -1,11 +1,12 @@
 #!/bin/bash
-# Train multiple supervised models in parallel
+# Train supervised models on OCTA500-3M dataset
+# Available models: csnet (fast), dscnet (accurate)
 
 # Base config
 CONFIG="configs/octa500_3m_supervised_models.yaml"
 
 # Models to train
-MODELS=("cenet" "csnet" "aacaunet" "unet3plus" "vesselnet" "transunet" "dscnet")
+MODELS=("csnet" "dscnet")
 
 # Run each model in parallel
 for model in "${MODELS[@]}"; do
