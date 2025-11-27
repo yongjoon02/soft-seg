@@ -162,6 +162,31 @@ class SupervisedModel(L.LightningModule):
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False)
         
+        # Log images to TensorBoard (first batch, first 3 samples)
+        if batch_idx == 0 and hasattr(self.hparams, 'log_image_enabled') and self.hparams.log_image_enabled:
+            pred_binary = (preds > 0).float()
+            label_binary = (labels > 0).float()
+            n_samples = min(3, images.shape[0])
+            for i in range(n_samples):
+                sample_name = batch['name'][i] if 'name' in batch else f'sample_{i}'
+                filename = sample_name.split('/')[-1] if '/' in sample_name else sample_name
+                # Log to TensorBoard
+                self.logger.experiment.add_image(
+                    f'val/{filename}/input',
+                    images[i],
+                    self.global_step
+                )
+                self.logger.experiment.add_image(
+                    f'val/{filename}/prediction',
+                    pred_binary[i:i+1],
+                    self.global_step
+                )
+                self.logger.experiment.add_image(
+                    f'val/{filename}/ground_truth',
+                    label_binary[i:i+1],
+                    self.global_step
+                )
+        
         return loss
     
     def test_step(self, batch, batch_idx):

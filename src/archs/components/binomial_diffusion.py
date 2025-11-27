@@ -10,6 +10,7 @@ Key differences from Gaussian Diffusion:
 
 Based on HiDiff implementation but without prior segmentation.
 """
+import autorootcwd
 import math
 import torch
 import torch.nn.functional as F

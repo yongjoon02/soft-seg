@@ -1,0 +1,2163 @@
+{
+  "csnet_octa500_3m_20251124_181749": {
+    "id": "csnet_octa500_3m_20251124_181749",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "csnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T18:17:49.303100",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251124_181749",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "csnet_octa500_3m_20251124_181824": {
+    "id": "csnet_octa500_3m_20251124_181824",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "csnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T18:18:24.350017",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251124_181824",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251124_181829": {
+    "id": "dscnet_octa500_3m_20251124_181829",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "dscnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 1,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T18:18:29.296890",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251124_181829",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.02505819872021675,
+      "val/dice": 0.8967347145080566,
+      "val/iou": 0.9167692065238953,
+      "val/precision": 0.9637143015861511,
+      "val/recall": 0.9469914436340332,
+      "val/specificity": 0.9469914436340332,
+      "val/betti_0_error": 15.199999809265137,
+      "val/betti_1_error": 19.700000762939453,
+      "val/cldice": 0.9319678544998169
+    },
+    "best_checkpoint": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251124_181829/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "csnet_octa500_3m_20251124_184904": {
+    "id": "csnet_octa500_3m_20251124_184904",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "csnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 16,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T18:49:04.788667",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251124_184904",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251124_184910": {
+    "id": "dscnet_octa500_3m_20251124_184910",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "dscnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 16,
+      "crop_size": 224,
+      "gpu": 1,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T18:49:10.441272",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251124_184910",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_octa500_3m_20251124_184915": {
+    "id": "medsegdiff_octa500_3m_20251124_184915",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "medsegdiff",
+      "learning_rate": 0.0002,
+      "max_epochs": 500,
+      "batch_size": 16,
+      "crop_size": 224,
+      "gpu": 2,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20,
+      "soft_label_type": "none",
+      "soft_label_fg_max": 11,
+      "soft_label_thickness_max": 13,
+      "soft_label_kernel_ratio": 0.1,
+      "soft_label_cache": true,
+      "timesteps": 1000,
+      "use_ema": true,
+      "ema_decay": 0.9999,
+      "num_ensemble": 1
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T18:49:15.378579",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251124_184915",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "berdiff_octa500_3m_20251124_184920": {
+    "id": "berdiff_octa500_3m_20251124_184920",
+    "model": "berdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "berdiff",
+      "learning_rate": 0.0002,
+      "max_epochs": 500,
+      "batch_size": 16,
+      "crop_size": 224,
+      "gpu": 3,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20,
+      "soft_label_type": "none",
+      "soft_label_fg_max": 11,
+      "soft_label_thickness_max": 13,
+      "soft_label_kernel_ratio": 0.1,
+      "soft_label_cache": true,
+      "timesteps": 1000,
+      "use_ema": true,
+      "ema_decay": 0.9999,
+      "num_ensemble": 1
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T18:49:20.574496",
+    "dir": "experiments/berdiff/octa500_3m/berdiff_octa500_3m_20251124_184920",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "DataLoader worker (pid 2474818) is killed by signal: Terminated. "
+  },
+  "csnet_octa500_3m_20251124_194644": {
+    "id": "csnet_octa500_3m_20251124_194644",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "csnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:46:44.435926",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251124_194644",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251124_194647": {
+    "id": "dscnet_octa500_3m_20251124_194647",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "dscnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:46:47.152177",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251124_194647",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_octa500_3m_20251124_194648": {
+    "id": "medsegdiff_octa500_3m_20251124_194648",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "medsegdiff",
+      "learning_rate": 0.0002,
+      "max_epochs": 500,
+      "batch_size": 16,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20,
+      "soft_label_type": "none",
+      "soft_label_fg_max": 11,
+      "soft_label_thickness_max": 13,
+      "soft_label_kernel_ratio": 0.1,
+      "soft_label_cache": true,
+      "timesteps": 1000,
+      "use_ema": true,
+      "ema_decay": 0.9999,
+      "num_ensemble": 1
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:46:48.799373",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251124_194648",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "berdiff_octa500_3m_20251124_194651": {
+    "id": "berdiff_octa500_3m_20251124_194651",
+    "model": "berdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "berdiff",
+      "learning_rate": 0.0002,
+      "max_epochs": 500,
+      "batch_size": 16,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20,
+      "soft_label_type": "none",
+      "soft_label_fg_max": 11,
+      "soft_label_thickness_max": 13,
+      "soft_label_kernel_ratio": 0.1,
+      "soft_label_cache": true,
+      "timesteps": 1000,
+      "use_ema": true,
+      "ema_decay": 0.9999,
+      "num_ensemble": 1
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:46:51.075707",
+    "dir": "experiments/berdiff/octa500_3m/berdiff_octa500_3m_20251124_194651",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "DataLoader worker (pid 2505837) is killed by signal: Terminated. "
+  },
+  "csnet_octa500_3m_20251124_195436": {
+    "id": "csnet_octa500_3m_20251124_195436",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "csnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:54:36.217067",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251124_195436",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "DataLoader worker (pid(s) 2522160) exited unexpectedly"
+  },
+  "csnet_octa500_3m_20251124_195649": {
+    "id": "csnet_octa500_3m_20251124_195649",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "csnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:56:49.436771",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251124_195649",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251124_195651": {
+    "id": "dscnet_octa500_3m_20251124_195651",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "dscnet",
+      "learning_rate": 0.002,
+      "max_epochs": 300,
+      "batch_size": 32,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:56:51.609038",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251124_195651",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_octa500_3m_20251124_195652": {
+    "id": "medsegdiff_octa500_3m_20251124_195652",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "arch_name": "medsegdiff",
+      "learning_rate": 0.0002,
+      "max_epochs": 500,
+      "batch_size": 8,
+      "crop_size": 224,
+      "gpu": 0,
+      "precision": "32",
+      "num_workers": 8,
+      "gradient_clip_val": 1.0,
+      "accumulate_grad_batches": 1,
+      "check_val_every_n_epoch": 5,
+      "log_every_n_steps": 20,
+      "soft_label_type": "none",
+      "soft_label_fg_max": 11,
+      "soft_label_thickness_max": 13,
+      "soft_label_kernel_ratio": 0.1,
+      "soft_label_cache": true,
+      "timesteps": 1000,
+      "use_ema": true,
+      "ema_decay": 0.9999,
+      "num_ensemble": 1
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-24T19:56:52.360726",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251124_195652",
+    "status": "completed",
+    "final_metrics": {
+      "val/dice": 0.8333312273025513,
+      "val/iou": 0.8721855878829956,
+      "val/precision": 0.9627442359924316,
+      "val/recall": 0.8989434242248535,
+      "val/specificity": 0.8989434242248535,
+      "val/betti_0_error": 21.700000762939453,
+      "val/betti_1_error": 28.299999237060547,
+      "val/cldice": 0.8929624557495117
+    },
+    "best_checkpoint": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251124_195652/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "csnet_octa500_3m_20251126_094137": {
+    "id": "csnet_octa500_3m_20251126_094137",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      },
+      "debug": true
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T09:41:37.764314",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_094137",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "OCTA500_3M_DataModule.__init__() got an unexpected keyword argument 'num_workers'"
+  },
+  "csnet_octa500_3m_20251126_094320": {
+    "id": "csnet_octa500_3m_20251126_094320",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 2,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T09:43:20.605563",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_094320",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "SupervisedModel.__init__() got an unexpected keyword argument 'image_size'"
+  },
+  "csnet_octa500_3m_20251126_094449": {
+    "id": "csnet_octa500_3m_20251126_094449",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 1,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T09:44:49.269300",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_094449",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "[Errno 32] Broken pipe"
+  },
+  "csnet_octa500_3m_20251126_095549": {
+    "id": "csnet_octa500_3m_20251126_095549",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T09:55:49.378899",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_095549",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251126_095550": {
+    "id": "dscnet_octa500_3m_20251126_095550",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "dscnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T09:55:50.154972",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251126_095550",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.024781357496976852,
+      "val/dice": 0.8994714021682739,
+      "val/iou": 0.9174052476882935,
+      "val/precision": 0.965809166431427,
+      "val/recall": 0.9457800984382629,
+      "val/specificity": 0.9457800984382629,
+      "val/betti_0_error": 14.100000381469727,
+      "val/betti_1_error": 22.5,
+      "val/cldice": 0.9350878000259399
+    },
+    "best_checkpoint": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251126_095550/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "medsegdiff_octa500_3m_20251126_121930": {
+    "id": "medsegdiff_octa500_3m_20251126_121930",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:19:30.755101",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251126_121930",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "berdiff_octa500_3m_20251126_121930": {
+    "id": "berdiff_octa500_3m_20251126_121930",
+    "model": "berdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "berdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:19:30.957711",
+    "dir": "experiments/berdiff/octa500_3m/berdiff_octa500_3m_20251126_121930",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "You requested gpu: [1]\n But your machine only has: [0]"
+  },
+  "csnet_octa500_3m_20251126_122033": {
+    "id": "csnet_octa500_3m_20251126_122033",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:20:33.610767",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_122033",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251126_122034": {
+    "id": "dscnet_octa500_3m_20251126_122034",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "dscnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:20:34.803004",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251126_122034",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_octa500_3m_20251126_122037": {
+    "id": "medsegdiff_octa500_3m_20251126_122037",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:20:37.443601",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251126_122037",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "DataLoader worker (pid 680299) is killed by signal: Terminated. "
+  },
+  "medsegdiff_octa500_3m_20251126_123540": {
+    "id": "medsegdiff_octa500_3m_20251126_123540",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:35:40.701043",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251126_123540",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "You requested gpu: [1]\n But your machine only has: [0]"
+  },
+  "berdiff_octa500_3m_20251126_123541": {
+    "id": "berdiff_octa500_3m_20251126_123541",
+    "model": "berdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "berdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:35:41.812963",
+    "dir": "experiments/berdiff/octa500_3m/berdiff_octa500_3m_20251126_123541",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "You requested gpu: [1]\n But your machine only has: [0]"
+  },
+  "csnet_octa500_3m_20251126_123711": {
+    "id": "csnet_octa500_3m_20251126_123711",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:37:11.929443",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_123711",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251126_123714": {
+    "id": "dscnet_octa500_3m_20251126_123714",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "dscnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:37:14.057627",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251126_123714",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_octa500_3m_20251126_123716": {
+    "id": "medsegdiff_octa500_3m_20251126_123716",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:37:16.157221",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251126_123716",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "berdiff_octa500_3m_20251126_123717": {
+    "id": "berdiff_octa500_3m_20251126_123717",
+    "model": "berdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "berdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:37:17.995380",
+    "dir": "experiments/berdiff/octa500_3m/berdiff_octa500_3m_20251126_123717",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "csnet_octa500_3m_20251126_124431": {
+    "id": "csnet_octa500_3m_20251126_124431",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:44:31.457089",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_124431",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251126_124433": {
+    "id": "dscnet_octa500_3m_20251126_124433",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "dscnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:44:33.679778",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251126_124433",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_octa500_3m_20251126_124435": {
+    "id": "medsegdiff_octa500_3m_20251126_124435",
+    "model": "medsegdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:44:35.707032",
+    "dir": "experiments/medsegdiff/octa500_3m/medsegdiff_octa500_3m_20251126_124435",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "berdiff_octa500_3m_20251126_124437": {
+    "id": "berdiff_octa500_3m_20251126_124437",
+    "model": "berdiff",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "berdiff",
+        "image_size": 224,
+        "dim": 64,
+        "timesteps": 1000,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "num_ensemble": 1,
+        "soft_label_type": "none",
+        "soft_label_cache": true,
+        "soft_label_fg_max": 11,
+        "soft_label_thickness_max": 13,
+        "soft_label_kernel_ratio": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10003.png",
+          "10015.png",
+          "10030.png"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 8,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 10,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "mode": "max",
+              "save_last": true,
+              "verbose": true
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:44:37.850556",
+    "dir": "experiments/berdiff/octa500_3m/berdiff_octa500_3m_20251126_124437",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "csnet_octa500_3m_20251126_124802": {
+    "id": "csnet_octa500_3m_20251126_124802",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10441.bmp",
+          "10445.bmp",
+          "10450.bmp"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:48:02.145003",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_124802",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dscnet_octa500_3m_20251126_124804": {
+    "id": "dscnet_octa500_3m_20251126_124804",
+    "model": "dscnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "dscnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "10441.bmp",
+          "10445.bmp",
+          "10450.bmp"
+        ]
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": [
+          0
+        ],
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "experiment",
+            "version": null
+          }
+        }
+      }
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T12:48:04.452196",
+    "dir": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251126_124804",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.025164514780044556,
+      "val/dice": 0.9012455940246582,
+      "val/iou": 0.9173057675361633,
+      "val/precision": 0.962009072303772,
+      "val/recall": 0.9491674304008484,
+      "val/specificity": 0.9491674304008484,
+      "val/betti_0_error": 17.0,
+      "val/betti_1_error": 25.200000762939453,
+      "val/cldice": 0.9343120455741882
+    },
+    "best_checkpoint": "experiments/dscnet/octa500_3m/dscnet_octa500_3m_20251126_124804/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "csnet_octa500_3m_20251126_134126": {
+    "id": "csnet_octa500_3m_20251126_134126",
+    "model": "csnet",
+    "dataset": "octa500_3m",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "num_classes": 2,
+        "image_size": 224,
+        "learning_rate": 0.001,
+        "weight_decay": 1e-05,
+        "log_image_enabled": true
+      },
+      "data": {
+        "name": "octa500_3m",
+        "train_dir": "data/OCTA500_3M/train",
+        "val_dir": "data/OCTA500_3M/val",
+        "test_dir": "data/OCTA500_3M/test",
+        "crop_size": 224,
+        "train_bs": 32,
+        "num_workers": 8
+      },
+      "trainer": {
+        "max_epochs": 300,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "log_every_n_steps": 50,
+        "check_val_every_n_epoch": 5,
+        "accumulate_grad_batches": 1,
+        "gradient_clip_val": null,
+        "callbacks": [
+          {
+            "class_path": "lightning.pytorch.callbacks.ModelCheckpoint",
+            "init_args": {
+              "monitor": "val/dice",
+              "save_last": true,
+              "mode": "max",
+              "verbose": true
+            }
+          },
+          {
+            "class_path": "lightning.pytorch.callbacks.StochasticWeightAveraging",
+            "init_args": {
+              "swa_lrs": 0.0001
+            }
+          }
+        ],
+        "logger": {
+          "class_path": "lightning.pytorch.loggers.TensorBoardLogger",
+          "init_args": {
+            "save_dir": "lightning_logs",
+            "name": "octa500_3m",
+            "version": "csnet"
+          }
+        }
+      },
+      "debug": true
+    },
+    "git_hash": "9594b9dab32b9fa7cf61b34a791f50cd554bca89",
+    "git_branch": "main",
+    "created_at": "2025-11-26T13:41:26.707474",
+    "dir": "experiments/csnet/octa500_3m/csnet_octa500_3m_20251126_134126",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "[Errno 32] Broken pipe"
+  }
+}

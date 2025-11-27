@@ -1,0 +1,15 @@
+{
+  "experiment_id": "berdiff_octa500_3m_20251124_195655",
+  "status": "completed",
+  "final_metrics": {
+    "val/dice": 0.7931986451148987,
+    "val/iou": 0.8379082679748535,
+    "val/precision": 0.97254478931427,
+    "val/recall": 0.8567808270454407,
+    "val/specificity": 0.8567808270454407,
+    "val/betti_0_error": 12.300000190734863,
+    "val/betti_1_error": 60.400001525878906,
+    "val/cldice": 0.8715901374816895
+  },
+  "best_checkpoint": "experiments/berdiff/octa500_3m/berdiff_octa500_3m_20251124_195655/checkpoints/best.ckpt"
+}
