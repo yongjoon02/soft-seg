@@ -1,119 +1,581 @@
 """DSCNet: Dynamic Snake Convolution Network for vessel segmentation.
-
-Based on official implementation: https://github.com/YaoleiQi/DSCNet
-Paper: "DSCNet: Dynamic Snake Convolution based on Topological Geometric Constraints for Tubular Structure Segmentation"
-
-Note: This implementation requires the DSConv module. If S3_DSConv_pro is not available,
-a simplified approximation is used.
+Based on original implementation: https://github.com/YaoleiQi/DSCNet
 """
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Optional
-
-# Configuration: Use official DSConv or approximation
-USE_OFFICIAL_DSCONV = True  # Set to True to use DSConv_pro, False for approximation
-
-if USE_OFFICIAL_DSCONV:
-    try:
-        from .S3_DSConv_pro import DSConv_pro
-        HAS_DSCONV = True
-    except ImportError:
-        HAS_DSCONV = False
-        print("⚠ DSConv_pro not found. Using approximation.")
-else:
-    HAS_DSCONV = False
+from torch import nn
+import einops
 
 
-class DSConvApprox(nn.Module):
-    """Approximated Dynamic Snake Convolution (lightweight version).
-    
-    This is a simplified version that captures the essence of snake convolution
-    without the computational overhead of deformable convolution.
-    
-    Uses directional convolutions with snake-like activation patterns.
-    """
-    
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 9,
-                 extend_scope: float = 1.0, morph: int = 0, if_offset: bool = True, device: str = 'cpu'):
+class DSConv_pro(nn.Module):
+    def __init__(
+        self,
+        in_channels: int = 1,
+        out_channels: int = 1,
+        kernel_size: int = 9,
+        extend_scope: float = 1.0,
+        morph: int = 0,
+        if_offset: bool = True,
+        device: str | torch.device = "cuda",
+    ):
+        """
+        A Dynamic Snake Convolution Implementation
+
+        Based on:
+
+            TODO
+
+        Args:
+            in_ch: number of input channels. Defaults to 1.
+            out_ch: number of output channels. Defaults to 1.
+            kernel_size: the size of kernel. Defaults to 9.
+            extend_scope: the range to expand. Defaults to 1 for this method.
+            morph: the morphology of the convolution kernel is mainly divided into two types along the x-axis (0) and the y-axis (1) (see the paper for details).
+            if_offset: whether deformation is required,  if it is False, it is the standard convolution kernel. Defaults to True.
+
+        """
+
         super().__init__()
-        self.morph = morph  # 0: x-axis, 1: y-axis
-        
-        # Use asymmetric kernels to capture directional features
-        if morph == 0:  # x-axis: horizontal structures
-            # Wide horizontal kernel
-            kernel_h, kernel_w = 3, 7
-        else:  # y-axis: vertical structures
-            # Tall vertical kernel
-            kernel_h, kernel_w = 7, 3
-        
-        padding_h = kernel_h // 2
-        padding_w = kernel_w // 2
-        
-        self.conv = nn.Conv2d(in_channels, out_channels, (kernel_h, kernel_w), 
-                             padding=(padding_h, padding_w))
+
+        if morph not in (0, 1):
+            raise ValueError("morph should be 0 or 1.")
+
+        self.kernel_size = kernel_size
+        self.extend_scope = extend_scope
+        self.morph = morph
+        self.if_offset = if_offset
+        self.device = torch.device(device)
+        self.to(device)
+
+        # self.bn = nn.BatchNorm2d(2 * kernel_size)
+        self.gn_offset = nn.GroupNorm(kernel_size, 2 * kernel_size)
         self.gn = nn.GroupNorm(out_channels // 4, out_channels)
         self.relu = nn.ReLU(inplace=True)
-        
-        # Snake-like activation enhancement (optional)
-        if if_offset:
-            self.alpha = nn.Parameter(torch.ones(1, out_channels, 1, 1) * 0.1)
-        else:
-            self.alpha = None
-        
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.conv(x)
-        out = self.gn(out)
-        
-        # Add snake-like modulation
-        if self.alpha is not None:
-            out = out + self.alpha * torch.sin(out)
-        
-        return self.relu(out)
+        self.tanh = nn.Tanh()
+
+        self.offset_conv = nn.Conv2d(in_channels, 2 * kernel_size, 3, padding=1)
+
+        self.dsc_conv_x = nn.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=(kernel_size, 1),
+            stride=(kernel_size, 1),
+            padding=0,
+        )
+        self.dsc_conv_y = nn.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=(1, kernel_size),
+            stride=(1, kernel_size),
+            padding=0,
+        )
+
+    def forward(self, input: torch.Tensor):
+        # Predict offset map between [-1, 1]
+        offset = self.offset_conv(input)
+        # offset = self.bn(offset)
+        offset = self.gn_offset(offset)
+        offset = self.tanh(offset)
+
+        # Run deformative conv (use input tensor's device)
+        y_coordinate_map, x_coordinate_map = get_coordinate_map_2D(
+            offset=offset,
+            morph=self.morph,
+            extend_scope=self.extend_scope,
+        )
+        deformed_feature = get_interpolated_feature(
+            input,
+            y_coordinate_map,
+            x_coordinate_map,
+        )
+
+        if self.morph == 0:
+            output = self.dsc_conv_x(deformed_feature)
+        elif self.morph == 1:
+            output = self.dsc_conv_y(deformed_feature)
+
+        # Groupnorm & ReLU
+        output = self.gn(output)
+        output = self.relu(output)
+
+        return output
+
+
+def get_coordinate_map_2D(
+    offset: torch.Tensor,
+    morph: int,
+    extend_scope: float = 1.0,
+):
+    """Computing 2D coordinate map of DSCNet based on: TODO
+
+    Args:
+        offset: offset predict by network with shape [B, 2*K, W, H]. Here K refers to kernel size.
+        morph: the morphology of the convolution kernel is mainly divided into two types along the x-axis (0) and the y-axis (1) (see the paper for details).
+        extend_scope: the range to expand. Defaults to 1 for this method.
+
+    Return:
+        y_coordinate_map: coordinate map along y-axis with shape [B, K_H * H, K_W * W]
+        x_coordinate_map: coordinate map along x-axis with shape [B, K_H * H, K_W * W]
+    """
+
+    if morph not in (0, 1):
+        raise ValueError("morph should be 0 or 1.")
+
+    batch_size, _, width, height = offset.shape
+    kernel_size = offset.shape[1] // 2
+    center = kernel_size // 2
+    # Use the device of input tensor
+    device = offset.device
+
+    y_offset_, x_offset_ = torch.split(offset, kernel_size, dim=1)
+
+    y_center_ = torch.arange(0, width, dtype=torch.float32, device=device)
+    y_center_ = einops.repeat(y_center_, "w -> k w h", k=kernel_size, h=height)
+
+    x_center_ = torch.arange(0, height, dtype=torch.float32, device=device)
+    x_center_ = einops.repeat(x_center_, "h -> k w h", k=kernel_size, w=width)
+
+    if morph == 0:
+        """
+        Initialize the kernel and flatten the kernel
+            y: only need 0
+            x: -num_points//2 ~ num_points//2 (Determined by the kernel size)
+        """
+        y_spread_ = torch.zeros([kernel_size], device=device)
+        x_spread_ = torch.linspace(-center, center, kernel_size, device=device)
+
+        y_grid_ = einops.repeat(y_spread_, "k -> k w h", w=width, h=height)
+        x_grid_ = einops.repeat(x_spread_, "k -> k w h", w=width, h=height)
+
+        y_new_ = y_center_ + y_grid_
+        x_new_ = x_center_ + x_grid_
+
+        y_new_ = einops.repeat(y_new_, "k w h -> b k w h", b=batch_size)
+        x_new_ = einops.repeat(x_new_, "k w h -> b k w h", b=batch_size)
+
+        y_offset_ = einops.rearrange(y_offset_, "b k w h -> k b w h")
+        y_offset_new_ = y_offset_.detach().clone()
+
+        # The center position remains unchanged and the rest of the positions begin to swing
+        # This part is quite simple. The main idea is that "offset is an iterative process"
+
+        y_offset_new_[center] = 0
+
+        for index in range(1, center + 1):
+            y_offset_new_[center + index] = (
+                y_offset_new_[center + index - 1] + y_offset_[center + index]
+            )
+            y_offset_new_[center - index] = (
+                y_offset_new_[center - index + 1] + y_offset_[center - index]
+            )
+
+        y_offset_new_ = einops.rearrange(y_offset_new_, "k b w h -> b k w h")
+
+        y_new_ = y_new_.add(y_offset_new_.mul(extend_scope))
+
+        y_coordinate_map = einops.rearrange(y_new_, "b k w h -> b (w k) h")
+        x_coordinate_map = einops.rearrange(x_new_, "b k w h -> b (w k) h")
+
+    elif morph == 1:
+        """
+        Initialize the kernel and flatten the kernel
+            y: -num_points//2 ~ num_points//2 (Determined by the kernel size)
+            x: only need 0
+        """
+        y_spread_ = torch.linspace(-center, center, kernel_size, device=device)
+        x_spread_ = torch.zeros([kernel_size], device=device)
+
+        y_grid_ = einops.repeat(y_spread_, "k -> k w h", w=width, h=height)
+        x_grid_ = einops.repeat(x_spread_, "k -> k w h", w=width, h=height)
+
+        y_new_ = y_center_ + y_grid_
+        x_new_ = x_center_ + x_grid_
+
+        y_new_ = einops.repeat(y_new_, "k w h -> b k w h", b=batch_size)
+        x_new_ = einops.repeat(x_new_, "k w h -> b k w h", b=batch_size)
+
+        x_offset_ = einops.rearrange(x_offset_, "b k w h -> k b w h")
+        x_offset_new_ = x_offset_.detach().clone()
+
+        # The center position remains unchanged and the rest of the positions begin to swing
+        # This part is quite simple. The main idea is that "offset is an iterative process"
+
+        x_offset_new_[center] = 0
+
+        for index in range(1, center + 1):
+            x_offset_new_[center + index] = (
+                x_offset_new_[center + index - 1] + x_offset_[center + index]
+            )
+            x_offset_new_[center - index] = (
+                x_offset_new_[center - index + 1] + x_offset_[center - index]
+            )
+
+        x_offset_new_ = einops.rearrange(x_offset_new_, "k b w h -> b k w h")
+
+        x_new_ = x_new_.add(x_offset_new_.mul(extend_scope))
+
+        y_coordinate_map = einops.rearrange(y_new_, "b k w h -> b w (h k)")
+        x_coordinate_map = einops.rearrange(x_new_, "b k w h -> b w (h k)")
+
+    return y_coordinate_map, x_coordinate_map
+
+
+def get_interpolated_feature(
+    input_feature: torch.Tensor,
+    y_coordinate_map: torch.Tensor,
+    x_coordinate_map: torch.Tensor,
+    interpolate_mode: str = "bilinear",
+):
+    """From coordinate map interpolate feature of DSCNet based on: TODO
+
+    Args:
+        input_feature: feature that to be interpolated with shape [B, C, H, W]
+        y_coordinate_map: coordinate map along y-axis with shape [B, K_H * H, K_W * W]
+        x_coordinate_map: coordinate map along x-axis with shape [B, K_H * H, K_W * W]
+        interpolate_mode: the arg 'mode' of nn.functional.grid_sample, can be 'bilinear' or 'bicubic' . Defaults to 'bilinear'.
+
+    Return:
+        interpolated_feature: interpolated feature with shape [B, C, K_H * H, K_W * W]
+    """
+
+    if interpolate_mode not in ("bilinear", "bicubic"):
+        raise ValueError("interpolate_mode should be 'bilinear' or 'bicubic'.")
+
+    y_max = input_feature.shape[-2] - 1
+    x_max = input_feature.shape[-1] - 1
+
+    y_coordinate_map_ = _coordinate_map_scaling(y_coordinate_map, origin=[0, y_max])
+    x_coordinate_map_ = _coordinate_map_scaling(x_coordinate_map, origin=[0, x_max])
+
+    y_coordinate_map_ = torch.unsqueeze(y_coordinate_map_, dim=-1)
+    x_coordinate_map_ = torch.unsqueeze(x_coordinate_map_, dim=-1)
+
+    # Note here grid with shape [B, H, W, 2]
+    # Where [:, :, :, 2] refers to [x ,y]
+    grid = torch.cat([x_coordinate_map_, y_coordinate_map_], dim=-1)
+
+    interpolated_feature = nn.functional.grid_sample(
+        input=input_feature,
+        grid=grid,
+        mode=interpolate_mode,
+        padding_mode="zeros",
+        align_corners=True,
+    )
+
+    return interpolated_feature
+
+
+def _coordinate_map_scaling(
+    coordinate_map: torch.Tensor,
+    origin: list,
+    target: list = [-1, 1],
+):
+    """Map the value of coordinate_map from origin=[min, max] to target=[a,b] for DSCNet based on: TODO
+
+    Args:
+        coordinate_map: the coordinate map to be scaled
+        origin: original value range of coordinate map, e.g. [coordinate_map.min(), coordinate_map.max()]
+        target: target value range of coordinate map,Defaults to [-1, 1]
+
+    Return:
+        coordinate_map_scaled: the coordinate map after scaling
+    """
+    min, max = origin
+    a, b = target
+
+    coordinate_map_scaled = torch.clamp(coordinate_map, min, max)
+
+    scale_factor = (b - a) / (max - min)
+    coordinate_map_scaled = a + scale_factor * (coordinate_map_scaled - min)
+
+    return coordinate_map_scaled
+
+
+"""Dynamic Snake Convolution Network"""
 
 
 class EncoderConv(nn.Module):
-    """Encoder convolution block with GroupNorm."""
-    
-    def __init__(self, in_ch: int, out_ch: int):
-        super().__init__()
+    def __init__(self, in_ch, out_ch):
+        super(EncoderConv, self).__init__()
         self.conv = nn.Conv2d(in_ch, out_ch, 3, padding=1)
         self.gn = nn.GroupNorm(out_ch // 4, out_ch)
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.relu(self.gn(self.conv(x)))
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.gn(x)
+        x = self.relu(x)
+        return x
 
 
 class DecoderConv(nn.Module):
-    """Decoder convolution block with GroupNorm."""
-    
-    def __init__(self, in_ch: int, out_ch: int):
-        super().__init__()
+    def __init__(self, in_ch, out_ch):
+        super(DecoderConv, self).__init__()
         self.conv = nn.Conv2d(in_ch, out_ch, 3, padding=1)
         self.gn = nn.GroupNorm(out_ch // 4, out_ch)
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.relu(self.gn(self.conv(x)))
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.gn(x)
+        x = self.relu(x)
+
+        return x
+
+
+class DSCNet_pro(nn.Module):
+    def __init__(
+        self,
+        n_channels,
+        n_classes,
+        kernel_size,
+        extend_scope,
+        if_offset,
+        device,
+        number,
+        dim,
+    ):
+        """
+        Our DSCNet
+        :param n_channels: input channel
+        :param n_classes: output channel
+        :param kernel_size: the size of kernel
+        :param extend_scope: the range to expand (default 1 for this method)
+        :param if_offset: whether deformation is required, if it is False, it is the standard convolution kernel
+        :param device: set on gpu
+        :param number: basic layer numbers
+        :param dim:
+        """
+        super().__init__()
+        device = device
+        self.kernel_size = kernel_size
+        self.extend_scope = extend_scope
+        self.if_offset = if_offset
+        self.relu = nn.ReLU(inplace=True)
+        self.number = number
+        """
+        The three contributions proposed in our paper are relatively independent. 
+        In order to facilitate everyone to use them separately, 
+        we first open source the network part of DSCNet. 
+        <dim> is a parameter used by multiple templates, 
+        which we will open source in the future ...
+        """
+        self.dim = dim  # This version dim is set to 1 by default, referring to a group of x-axes and y-axes
+        """
+        Here is our framework. Since the target also has non-tubular structure regions, 
+        our designed model also incorporates the standard convolution kernel, 
+        for fairness, we also add this operation to compare with other methods (like: Deformable Convolution).
+        """
+        self.conv00 = EncoderConv(n_channels, self.number)
+        self.conv0x = DSConv_pro(
+            n_channels,
+            self.number,
+            self.kernel_size,
+            self.extend_scope,
+            0,
+            self.if_offset,
+            device,
+        )
+        self.conv0y = DSConv_pro(
+            n_channels,
+            self.number,
+            self.kernel_size,
+            self.extend_scope,
+            1,
+            self.if_offset,
+            device,
+        )
+        self.conv1 = EncoderConv(3 * self.number, self.number)
+
+        self.conv20 = EncoderConv(self.number, 2 * self.number)
+        self.conv2x = DSConv_pro(
+            self.number,
+            2 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            0,
+            self.if_offset,
+            device,
+        )
+        self.conv2y = DSConv_pro(
+            self.number,
+            2 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            1,
+            self.if_offset,
+            device,
+        )
+        self.conv3 = EncoderConv(6 * self.number, 2 * self.number)
+
+        self.conv40 = EncoderConv(2 * self.number, 4 * self.number)
+        self.conv4x = DSConv_pro(
+            2 * self.number,
+            4 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            0,
+            self.if_offset,
+            device,
+        )
+        self.conv4y = DSConv_pro(
+            2 * self.number,
+            4 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            1,
+            self.if_offset,
+            device,
+        )
+        self.conv5 = EncoderConv(12 * self.number, 4 * self.number)
+
+        self.conv60 = EncoderConv(4 * self.number, 8 * self.number)
+        self.conv6x = DSConv_pro(
+            4 * self.number,
+            8 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            0,
+            self.if_offset,
+            device,
+        )
+        self.conv6y = DSConv_pro(
+            4 * self.number,
+            8 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            1,
+            self.if_offset,
+            device,
+        )
+        self.conv7 = EncoderConv(24 * self.number, 8 * self.number)
+
+        self.conv120 = EncoderConv(12 * self.number, 4 * self.number)
+        self.conv12x = DSConv_pro(
+            12 * self.number,
+            4 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            0,
+            self.if_offset,
+            device,
+        )
+        self.conv12y = DSConv_pro(
+            12 * self.number,
+            4 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            1,
+            self.if_offset,
+            device,
+        )
+        self.conv13 = EncoderConv(12 * self.number, 4 * self.number)
+
+        self.conv140 = DecoderConv(6 * self.number, 2 * self.number)
+        self.conv14x = DSConv_pro(
+            6 * self.number,
+            2 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            0,
+            self.if_offset,
+            device,
+        )
+        self.conv14y = DSConv_pro(
+            6 * self.number,
+            2 * self.number,
+            self.kernel_size,
+            self.extend_scope,
+            1,
+            self.if_offset,
+            device,
+        )
+        self.conv15 = DecoderConv(6 * self.number, 2 * self.number)
+
+        self.conv160 = DecoderConv(3 * self.number, self.number)
+        self.conv16x = DSConv_pro(
+            3 * self.number,
+            self.number,
+            self.kernel_size,
+            self.extend_scope,
+            0,
+            self.if_offset,
+            device,
+        )
+        self.conv16y = DSConv_pro(
+            3 * self.number,
+            self.number,
+            self.kernel_size,
+            self.extend_scope,
+            1,
+            self.if_offset,
+            device,
+        )
+        self.conv17 = DecoderConv(3 * self.number, self.number)
+
+        self.out_conv = nn.Conv2d(self.number, n_classes, 1)
+        self.maxpooling = nn.MaxPool2d(2)
+        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+        self.sigmoid = nn.Sigmoid()
+        self.softmax = nn.Softmax(dim=1)
+        self.dropout = nn.Dropout(0.5)
+
+    def forward(self, x):
+        # block0
+        x_00_0 = self.conv00(x)
+        x_0x_0 = self.conv0x(x)
+        x_0y_0 = self.conv0y(x)
+        x_0_1 = self.conv1(torch.cat([x_00_0, x_0x_0, x_0y_0], dim=1))
+
+        # block1
+        x = self.maxpooling(x_0_1)
+        x_20_0 = self.conv20(x)
+        x_2x_0 = self.conv2x(x)
+        x_2y_0 = self.conv2y(x)
+        x_1_1 = self.conv3(torch.cat([x_20_0, x_2x_0, x_2y_0], dim=1))
+
+        # block2
+        x = self.maxpooling(x_1_1)
+        x_40_0 = self.conv40(x)
+        x_4x_0 = self.conv4x(x)
+        x_4y_0 = self.conv4y(x)
+        x_2_1 = self.conv5(torch.cat([x_40_0, x_4x_0, x_4y_0], dim=1))
+
+        # block3
+        x = self.maxpooling(x_2_1)
+        x_60_0 = self.conv60(x)
+        x_6x_0 = self.conv6x(x)
+        x_6y_0 = self.conv6y(x)
+        x_3_1 = self.conv7(torch.cat([x_60_0, x_6x_0, x_6y_0], dim=1))
+
+        # block4
+        x = self.up(x_3_1)
+        x_120_2 = self.conv120(torch.cat([x, x_2_1], dim=1))
+        x_12x_2 = self.conv12x(torch.cat([x, x_2_1], dim=1))
+        x_12y_2 = self.conv12y(torch.cat([x, x_2_1], dim=1))
+        x_2_3 = self.conv13(torch.cat([x_120_2, x_12x_2, x_12y_2], dim=1))
+
+        # block5
+        x = self.up(x_2_3)
+        x_140_2 = self.conv140(torch.cat([x, x_1_1], dim=1))
+        x_14x_2 = self.conv14x(torch.cat([x, x_1_1], dim=1))
+        x_14y_2 = self.conv14y(torch.cat([x, x_1_1], dim=1))
+        x_1_3 = self.conv15(torch.cat([x_140_2, x_14x_2, x_14y_2], dim=1))
+
+        # block6
+        x = self.up(x_1_3)
+        x_160_2 = self.conv160(torch.cat([x, x_0_1], dim=1))
+        x_16x_2 = self.conv16x(torch.cat([x, x_0_1], dim=1))
+        x_16y_2 = self.conv16y(torch.cat([x, x_0_1], dim=1))
+        x_0_3 = self.conv17(torch.cat([x_160_2, x_16x_2, x_16y_2], dim=1))
+        # x = self.dropout(x)
+        out = self.out_conv(x_0_3)
+
+        return out
 
 
 class DSCNet(nn.Module):
-    """Dynamic Snake Convolution Network for tubular structure segmentation.
-    
-    Official architecture from DSCNet paper. Uses Dynamic Snake Convolution (DSConv)
-    in x and y directions along with standard convolution for multi-directional feature extraction.
-    
-    Args:
-        in_channels: Number of input channels (default: 1 for grayscale)
-        num_classes: Number of output classes (default: 2 for binary segmentation)
-        base_channels: Base number of channels (default: 32)
-        kernel_size: Kernel size for DSConv (default: 9)
-        extend_scope: Range to expand for DSConv (default: 1.0)
-        if_offset: Whether deformation is required (default: True)
-        device: Device to use (default: 'cpu')
-    """
+    """Wrapper for DSCNet_pro with simplified interface."""
     
     def __init__(
         self,
@@ -123,146 +585,42 @@ class DSCNet(nn.Module):
         kernel_size: int = 9,
         extend_scope: float = 1.0,
         if_offset: bool = True,
-        device: str = 'cpu',
     ):
         super().__init__()
-        self.kernel_size = kernel_size
-        self.extend_scope = extend_scope
-        self.if_offset = if_offset
-        self.relu = nn.ReLU(inplace=True)
-        self.number = base_channels
-        
-        # Select DSConv implementation
-        if HAS_DSCONV:
-            DSConv = DSConv_pro
-        else:
-            DSConv = DSConvApprox
-        
-        # Block 0: Input layer (3 parallel paths: standard, x-axis, y-axis)
-        self.conv00 = EncoderConv(in_channels, self.number)
-        self.conv0x = DSConv(in_channels, self.number, kernel_size, extend_scope, 0, if_offset, device)
-        self.conv0y = DSConv(in_channels, self.number, kernel_size, extend_scope, 1, if_offset, device)
-        self.conv1 = EncoderConv(3 * self.number, self.number)
-
-        # Block 1: First downsampling
-        self.conv20 = EncoderConv(self.number, 2 * self.number)
-        self.conv2x = DSConv(self.number, 2 * self.number, kernel_size, extend_scope, 0, if_offset, device)
-        self.conv2y = DSConv(self.number, 2 * self.number, kernel_size, extend_scope, 1, if_offset, device)
-        self.conv3 = EncoderConv(6 * self.number, 2 * self.number)
-
-        # Block 2: Second downsampling
-        self.conv40 = EncoderConv(2 * self.number, 4 * self.number)
-        self.conv4x = DSConv(2 * self.number, 4 * self.number, kernel_size, extend_scope, 0, if_offset, device)
-        self.conv4y = DSConv(2 * self.number, 4 * self.number, kernel_size, extend_scope, 1, if_offset, device)
-        self.conv5 = EncoderConv(12 * self.number, 4 * self.number)
-
-        # Block 3: Third downsampling (bottleneck)
-        self.conv60 = EncoderConv(4 * self.number, 8 * self.number)
-        self.conv6x = DSConv(4 * self.number, 8 * self.number, kernel_size, extend_scope, 0, if_offset, device)
-        self.conv6y = DSConv(4 * self.number, 8 * self.number, kernel_size, extend_scope, 1, if_offset, device)
-        self.conv7 = EncoderConv(24 * self.number, 8 * self.number)
-
-        # Block 4: First upsampling
-        self.conv120 = EncoderConv(12 * self.number, 4 * self.number)
-        self.conv12x = DSConv(12 * self.number, 4 * self.number, kernel_size, extend_scope, 0, if_offset, device)
-        self.conv12y = DSConv(12 * self.number, 4 * self.number, kernel_size, extend_scope, 1, if_offset, device)
-        self.conv13 = EncoderConv(12 * self.number, 4 * self.number)
-
-        # Block 5: Second upsampling
-        self.conv140 = DecoderConv(6 * self.number, 2 * self.number)
-        self.conv14x = DSConv(6 * self.number, 2 * self.number, kernel_size, extend_scope, 0, if_offset, device)
-        self.conv14y = DSConv(6 * self.number, 2 * self.number, kernel_size, extend_scope, 1, if_offset, device)
-        self.conv15 = DecoderConv(6 * self.number, 2 * self.number)
-
-        # Block 6: Third upsampling (output)
-        self.conv160 = DecoderConv(3 * self.number, self.number)
-        self.conv16x = DSConv(3 * self.number, self.number, kernel_size, extend_scope, 0, if_offset, device)
-        self.conv16y = DSConv(3 * self.number, self.number, kernel_size, extend_scope, 1, if_offset, device)
-        self.conv17 = DecoderConv(3 * self.number, self.number)
-
-        # Output layer
-        self.out_conv = nn.Conv2d(self.number, num_classes, 1)
-        
-        # Pooling and upsampling
-        self.maxpooling = nn.MaxPool2d(2)
-        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
-        
-        # Note: Sigmoid removed - will be applied in loss function
-        self.dropout = nn.Dropout(0.5)
-
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = DSCNet_pro(
+            n_channels=in_channels,
+            n_classes=num_classes,
+            kernel_size=kernel_size,
+            extend_scope=extend_scope,
+            if_offset=if_offset,
+            device=device,
+            number=base_channels,
+            dim=1,
+        )
+    
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass following official DSCNet architecture.
-        
-        Each block uses 3 parallel paths:
-        - Standard convolution (conv*0)
-        - DSConv in x-axis direction (conv*x)
-        - DSConv in y-axis direction (conv*y)
-        These are concatenated and fused.
-        """
-        # Block 0: Input processing
-        x_00_0 = self.conv00(x)
-        x_0x_0 = self.conv0x(x)
-        x_0y_0 = self.conv0y(x)
-        x_0_1 = self.conv1(torch.cat([x_00_0, x_0x_0, x_0y_0], dim=1))
-
-        # Block 1: First encoder stage
-        x = self.maxpooling(x_0_1)
-        x_20_0 = self.conv20(x)
-        x_2x_0 = self.conv2x(x)
-        x_2y_0 = self.conv2y(x)
-        x_1_1 = self.conv3(torch.cat([x_20_0, x_2x_0, x_2y_0], dim=1))
-
-        # Block 2: Second encoder stage
-        x = self.maxpooling(x_1_1)
-        x_40_0 = self.conv40(x)
-        x_4x_0 = self.conv4x(x)
-        x_4y_0 = self.conv4y(x)
-        x_2_1 = self.conv5(torch.cat([x_40_0, x_4x_0, x_4y_0], dim=1))
-
-        # Block 3: Bottleneck
-        x = self.maxpooling(x_2_1)
-        x_60_0 = self.conv60(x)
-        x_6x_0 = self.conv6x(x)
-        x_6y_0 = self.conv6y(x)
-        x_3_1 = self.conv7(torch.cat([x_60_0, x_6x_0, x_6y_0], dim=1))
-
-        # Block 4: First decoder stage with skip connection
-        x = self.up(x_3_1)
-        x_concat = torch.cat([x, x_2_1], dim=1)
-        x_120_2 = self.conv120(x_concat)
-        x_12x_2 = self.conv12x(x_concat)
-        x_12y_2 = self.conv12y(x_concat)
-        x_2_3 = self.conv13(torch.cat([x_120_2, x_12x_2, x_12y_2], dim=1))
-
-        # Block 5: Second decoder stage with skip connection
-        x = self.up(x_2_3)
-        x_concat = torch.cat([x, x_1_1], dim=1)
-        x_140_2 = self.conv140(x_concat)
-        x_14x_2 = self.conv14x(x_concat)
-        x_14y_2 = self.conv14y(x_concat)
-        x_1_3 = self.conv15(torch.cat([x_140_2, x_14x_2, x_14y_2], dim=1))
-
-        # Block 6: Third decoder stage with skip connection
-        x = self.up(x_1_3)
-        x_concat = torch.cat([x, x_0_1], dim=1)
-        x_160_2 = self.conv160(x_concat)
-        x_16x_2 = self.conv16x(x_concat)
-        x_16y_2 = self.conv16y(x_concat)
-        x_0_3 = self.conv17(torch.cat([x_160_2, x_16x_2, x_16y_2], dim=1))
-        
-        # Output (no sigmoid - will be applied in loss)
-        out = self.out_conv(x_0_3)
-        
-        return out
+        return self.model(x)
 
 
 if __name__ == "__main__":
-    # Test the model
-    model = DSCNet(in_channels=1, num_classes=2, base_channels=32)
-    x = torch.randn(2, 1, 224, 224)
-    output = model(x)
-    print(f"Input shape: {x.shape}")
-    print(f"Output shape: {output.shape}")
-    print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
+    device = torch.device("cuda")
+    model = DSCNet(in_channels=1, num_classes=2, base_channels=32, kernel_size=9).to(device)
+    model.eval()
+    
+    # Count parameters
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
+    
+    x = torch.randn(2, 1, 224, 224, device=device)
+    
+    with torch.no_grad():
+        output = model(x)
+    
+    print(f"Input: {x.shape} -> Output: {output.shape}")
+    print(f"Output range: [{output.min():.3f}, {output.max():.3f}]")
+    print("✓ Test passed!")
 

@@ -26,8 +26,7 @@ for MODEL in "${SUPERVISED_MODELS[@]}"; do
     
     CUDA_VISIBLE_DEVICES=${GPU} uv run python scripts/train.py \
         --config ${CONFIG} \
-        --model ${MODEL} \
-        --gpu 0 \
+        --log-image \
         > logs/train_${DATASET}_${MODEL}.log 2>&1 &
     
     echo "   PID: $!"
@@ -48,8 +47,7 @@ for MODEL in "${DIFFUSION_MODELS[@]}"; do
     
     CUDA_VISIBLE_DEVICES=${GPU} uv run python scripts/train.py \
         --config ${CONFIG} \
-        --model ${MODEL} \
-        --gpu 0 \
+        --log-image \
         > logs/train_${DATASET}_${MODEL}.log 2>&1 &
     
     echo "   PID: $!"

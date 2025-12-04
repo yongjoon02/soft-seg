@@ -166,6 +166,8 @@ class TrainRunner:
             supervised_args = common_args.copy()
             supervised_args['img_size'] = supervised_args.pop('image_size')
             supervised_args['in_channels'] = 1
+            supervised_args['log_image_enabled'] = self.model_cfg.get('log_image_enabled', False)
+            supervised_args['log_image_names'] = self.model_cfg.get('log_image_names', None)
             return SupervisedModel(**supervised_args)
         else:  # diffusion
             return DiffusionModel(
@@ -180,6 +182,8 @@ class TrainRunner:
                 use_ema=self.model_cfg.get('use_ema', True),
                 ema_decay=self.model_cfg.get('ema_decay', 0.9999),
                 num_ensemble=self.model_cfg.get('num_ensemble', 1),
+                log_image_enabled=self.model_cfg.get('log_image_enabled', False),
+                log_image_names=self.model_cfg.get('log_image_names', None),
             )
     
     def _create_callbacks(self, exp_dir: Path):
@@ -218,10 +222,9 @@ class TrainRunner:
         # Extract precision (handle both "32" and "32-true" formats)
         precision_str = str(self.trainer_cfg.get('precision', '32-true'))
         
-        # Get device list
-        devices = self.trainer_cfg.get('devices', 1)
-        if isinstance(devices, int):
-            devices = [devices]
+        # When using CUDA_VISIBLE_DEVICES, always use devices=1
+        # This means "use 1 GPU" (which will be the one specified by CUDA_VISIBLE_DEVICES)
+        devices = 1
         
         return L.Trainer(
             max_epochs=self.trainer_cfg.get('max_epochs', 300),

@@ -85,6 +85,10 @@ def merge_config_with_args(config: Dict[str, Any], args: Any) -> Dict[str, Any]:
     if args.resume is not None:
         merged['resume'] = args.resume
     
+    # Image logging
+    if hasattr(args, 'log_image') and args.log_image:
+        model_cfg['log_image_enabled'] = True
+    
     # Update merged config
     merged['model'] = model_cfg
     merged['data'] = data_cfg

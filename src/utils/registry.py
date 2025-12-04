@@ -9,7 +9,9 @@ class Registry():
         if isinstance(suffix, str):
             name = name + '_' + suffix # ex) UNet_model
         
-        assert name not in self._obj_map, f"{name} is already registered in {self._name} registry."
+        # Allow re-registration (for module reloading and direct script execution)
+        if name in self._obj_map:
+            pass  # Silently overwrite
         
         self._obj_map[name] = obj
         # print(f"Registering {name} to {self._name} registry.")  # 로그 제거

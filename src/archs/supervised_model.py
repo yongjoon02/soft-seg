@@ -47,6 +47,8 @@ class SupervisedModel(L.LightningModule):
         weight_decay: float = 1e-5,
         experiment_name: str = None,
         data_name: str = 'octa500_3m',
+        log_image_enabled: bool = False,
+        log_image_names: list = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -162,30 +164,37 @@ class SupervisedModel(L.LightningModule):
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False)
         
-        # Log images to TensorBoard (first batch, first 3 samples)
-        if batch_idx == 0 and hasattr(self.hparams, 'log_image_enabled') and self.hparams.log_image_enabled:
+        # DEBUG: Check all conditions
+        print(f"[DEBUG-VAL] Epoch {self.current_epoch}, batch_idx={batch_idx}")
+        print(f"[DEBUG-VAL] hasattr log_image_enabled: {hasattr(self.hparams, 'log_image_enabled')}")
+        if hasattr(self.hparams, 'log_image_enabled'):
+            print(f"[DEBUG-VAL] log_image_enabled value: {self.hparams.log_image_enabled}")
+        print(f"[DEBUG-VAL] All hparams keys: {list(vars(self.hparams).keys())}")
+        
+        # Log images to TensorBoard (specified samples only)
+        if hasattr(self.hparams, 'log_image_enabled') and self.hparams.log_image_enabled:
+            log_names = getattr(self.hparams, 'log_image_names', None)
             pred_binary = (preds > 0).float()
             label_binary = (labels > 0).float()
-            n_samples = min(3, images.shape[0])
-            for i in range(n_samples):
+            
+            for i in range(images.shape[0]):
                 sample_name = batch['name'][i] if 'name' in batch else f'sample_{i}'
                 filename = sample_name.split('/')[-1] if '/' in sample_name else sample_name
-                # Log to TensorBoard
-                self.logger.experiment.add_image(
-                    f'val/{filename}/input',
-                    images[i],
-                    self.global_step
-                )
-                self.logger.experiment.add_image(
-                    f'val/{filename}/prediction',
-                    pred_binary[i:i+1],
-                    self.global_step
-                )
-                self.logger.experiment.add_image(
-                    f'val/{filename}/ground_truth',
-                    label_binary[i:i+1],
-                    self.global_step
-                )
+                
+                # Only log if filename matches log_image_names (or log all if not specified)
+                if log_names is None or filename in log_names:
+                    print(f"[DEBUG] Logging image: {filename} at epoch {self.current_epoch}")
+                    # Log to TensorBoard
+                    self.logger.experiment.add_image(
+                        f'val/{filename}/prediction',
+                        pred_binary[i:i+1],
+                        self.global_step
+                    )
+                    self.logger.experiment.add_image(
+                        f'val/{filename}/ground_truth',
+                        label_binary[i:i+1],
+                        self.global_step
+                    )
         
         return loss
     

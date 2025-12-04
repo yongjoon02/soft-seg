@@ -88,6 +88,8 @@ def parse_args():
                        help='Debug mode (2 epochs, limited batches)')
     parser.add_argument('--resume', type=str,
                        help='Resume from checkpoint')
+    parser.add_argument('--log-image', action='store_true',
+                       help='Enable image logging to TensorBoard')
     
     return parser.parse_args()
 

@@ -17,7 +17,15 @@ class EnhancedTensorBoardLogger(TensorBoardLogger):
     """
     
     def __init__(self, save_dir, name="", version=None, **kwargs):
+        # Ensure save_dir exists before initializing parent
+        save_dir_path = Path(save_dir)
+        save_dir_path.mkdir(parents=True, exist_ok=True)
+        
         super().__init__(save_dir=save_dir, name=name, version=version, **kwargs)
+        
+        # Ensure log_dir exists
+        Path(self.log_dir).mkdir(parents=True, exist_ok=True)
+        
         self.predictions_dir = Path(self.log_dir) / "predictions"
         self.predictions_dir.mkdir(parents=True, exist_ok=True)
     

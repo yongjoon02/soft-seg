@@ -267,21 +267,17 @@ class GaussianDiffusionModel(nn.Module):
             # DDPM sampling step
             if t > 0:
                 noise = torch.randn_like(img)
-                alpha_t = self.alphas_cumprod[t]
-                alpha_prev = self.alphas_cumprod[t - 1]
-                beta_t = self.betas[t]
                 
                 # Predict x_0
                 pred_x0 = preds.predict_x_start
                 
-                # Compute posterior mean
+                # Use pre-computed posterior coefficients (correct DDPM formula)
+                # posterior_mean = coef1 * x_0 + coef2 * x_t
                 posterior_mean = (
-                    beta_t * torch.sqrt(alpha_prev) / (1 - alpha_t) * pred_x0 +
-                    (1 - alpha_prev) * torch.sqrt(1 - beta_t) / (1 - alpha_t) * img
+                    extract(self.posterior_mean_coef1, batched_times, img.shape) * pred_x0 +
+                    extract(self.posterior_mean_coef2, batched_times, img.shape) * img
                 )
-                
-                # Compute posterior variance
-                posterior_variance = (1 - alpha_prev) * beta_t / (1 - alpha_t)
+                posterior_variance = extract(self.posterior_variance, batched_times, img.shape)
                 
                 # Sample x_{t-1}
                 img = posterior_mean + torch.sqrt(posterior_variance) * noise
