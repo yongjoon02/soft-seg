@@ -1,0 +1,65 @@
+# Flow matching configuration for simple conditional segmentation (image + noise -> geometry)
+
+model:
+  arch_name: dhariwal_concat_unet
+  image_size: 320
+  patch_plan:
+    - [320, 8]
+  dim: 32
+  timesteps: 30
+  num_ensemble: 5
+  sigma: 0.25
+  learning_rate: 0.0002
+  weight_decay: 0.00001
+  num_classes: 2
+  experiment_name: flow_model
+  data_name: xca
+  log_image_enabled: true
+  log_image_names:
+    - '00036.png'
+    - '00050.png'
+    - '00063.png'
+  # UNet architecture parameters
+  model_channels: 32
+  channel_mult: [1, 2, 4, 8]
+  channel_mult_emb: 4
+  num_blocks: 3
+  attn_resolutions: [16, 16, 8, 8]
+  dropout: 0.0
+  label_dim: 0
+  augment_dim: 0
+
+data:
+  name: xca_flow
+  train_dir: data/xca_full/train
+  val_dir: data/xca_full/val
+  test_dir: data/xca_full/test
+  train_bs: 4
+  image_size: 320
+  num_samples_per_image: 16
+
+trainer:
+  max_epochs: 500
+  accelerator: gpu
+  devices: 1
+  precision: 32-true
+  enable_progress_bar: false
+  check_val_every_n_epoch: 150
+  accumulate_grad_batches: 4
+  gradient_clip_val: 1.0
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        monitor: val/dice
+        mode: max
+        save_last: true
+        verbose: true
+    - class_path: src.callbacks.ema_callback.EMAWeightAveraging
+      init_args:
+        decay: 0.999
+  logger:
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
+    init_args:
+      save_dir: lightning_logs
+      name: xca_flow_model
+      version: flow_model

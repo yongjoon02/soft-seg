@@ -1,18 +1,23 @@
 """Supervised learning model for OCT segmentation."""
 
+import lightning.pytorch as L
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import lightning.pytorch as L
 from monai.inferers import SlidingWindowInferer
 from torchmetrics import MetricCollection
 
 from src.archs.components import CSNet, DSCNet
 from src.metrics import (
-    Dice, Precision, Recall, Specificity, JaccardIndex,
-    clDice, Betti0Error, Betti1Error
+    Betti0Error,
+    Betti1Error,
+    Dice,
+    JaccardIndex,
+    Precision,
+    Recall,
+    Specificity,
+    clDice,
 )
-
 
 MODEL_REGISTRY = {
     'csnet': CSNet,
@@ -20,12 +25,84 @@ MODEL_REGISTRY = {
 }
 
 
+class SoftCrossEntropyLoss(nn.Module):
+    """Cross entropy loss that supports soft labels.
+    
+    For soft labels, converts them to 2-class distribution and computes
+    cross entropy with log_softmax.
+    
+    Args:
+        soft_label: Whether to use soft label mode (default: False)
+    """
+    def __init__(self, soft_label: bool = False):
+        super().__init__()
+        self.soft_label = soft_label
+        self.hard_ce = nn.CrossEntropyLoss()
+    
+    def forward(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            logits: (B, C, H, W) model output logits
+            labels: (B, H, W) soft labels in [0, 1] or hard labels (float due to augmentation)
+        """
+        if not self.soft_label:
+            # Hard label mode: threshold then convert to long
+            # (augmentation can cause interpolated values like 0.3, 0.7)
+            return self.hard_ce(logits, (labels > 0.5).long())
+        
+        # Soft label mode: convert soft label to 2-class distribution
+        # labels shape: (B, H, W) with values in [0, 1]
+        # target shape: (B, 2, H, W) - probability for each class
+        soft_target = torch.stack([1 - labels, labels], dim=1)  # (B, 2, H, W)
+        
+        # Compute soft cross entropy
+        log_probs = F.log_softmax(logits, dim=1)  # (B, C, H, W)
+        loss = -torch.sum(soft_target * log_probs, dim=1)  # (B, H, W)
+        return loss.mean()
+
+
+class SoftBCELoss(nn.Module):
+    """Binary Cross Entropy loss for soft labels.
+    
+    Converts 2-class logits to probability via softmax, then applies BCE.
+    More natural for soft labels than cross entropy.
+    
+    Args:
+        soft_label: Whether to use soft label mode (default: False)
+    """
+    def __init__(self, soft_label: bool = False):
+        super().__init__()
+        self.soft_label = soft_label
+        self.hard_ce = nn.CrossEntropyLoss()
+    
+    def forward(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            logits: (B, C, H, W) model output logits (C=2 for binary segmentation)
+            labels: (B, H, W) soft labels in [0, 1]
+        """
+        if not self.soft_label:
+            # Hard label mode: use standard cross entropy
+            return self.hard_ce(logits, (labels > 0.5).long())
+        
+        # Soft label mode: convert logits to probability and use BCE
+        # Get probability for foreground class (class 1)
+        probs = F.softmax(logits, dim=1)[:, 1]  # (B, H, W)
+        
+        # BCE loss with soft labels
+        # BCE = -[y * log(p) + (1-y) * log(1-p)]
+        eps = 1e-7
+        probs = torch.clamp(probs, eps, 1 - eps)
+        loss = -(labels * torch.log(probs) + (1 - labels) * torch.log(1 - probs))
+        return loss.mean()
+
+
 class ModelWrapper(nn.Module):
     """Wrapper to handle models that return dict outputs (e.g., UNet3Plus)."""
     def __init__(self, model):
         super().__init__()
         self.model = model
-    
+
     def forward(self, x):
         output = self.model(x)
         # If model returns dict, extract main output
@@ -36,7 +113,7 @@ class ModelWrapper(nn.Module):
 
 class SupervisedModel(L.LightningModule):
     """Supervised segmentation model with sliding window inference."""
-    
+
     def __init__(
         self,
         arch_name: str = 'cenet',
@@ -49,29 +126,32 @@ class SupervisedModel(L.LightningModule):
         data_name: str = 'octa500_3m',
         log_image_enabled: bool = False,
         log_image_names: list = None,
+        soft_label: bool = False,  # soft label 학습 모드
+        loss_type: str = 'ce',  # 'ce' for CrossEntropy, 'bce' for BCE
     ):
         super().__init__()
         self.save_hyperparameters()
-        
+
         # Set experiment name
         if experiment_name is None:
             experiment_name = f"{data_name}/{arch_name}"
         self.experiment_name = experiment_name
         self.data_name = data_name
         self.arch_name = arch_name
-        
+        self.soft_label = soft_label  # Store soft label mode
+
         # 모델 생성
         if arch_name not in MODEL_REGISTRY:
             raise ValueError(f"Unknown architecture: {arch_name}. Choose from {list(MODEL_REGISTRY.keys())}")
-        
+
         model_cls = MODEL_REGISTRY[arch_name]
-        
+
         # Create model instance
         base_model = model_cls(in_channels=in_channels, num_classes=num_classes)
-        
+
         # Wrap model to handle dict outputs
         self.model = ModelWrapper(base_model)
-        
+
         # Sliding window inferer for validation (128x128 patches)
         self.inferer = SlidingWindowInferer(
             roi_size=(224, 224),
@@ -79,10 +159,13 @@ class SupervisedModel(L.LightningModule):
             overlap=0.25,
             mode='gaussian',
         )
-        
-        # Loss function
-        self.loss_fn = nn.CrossEntropyLoss()
-        
+
+        # Loss function (soft label aware)
+        if loss_type == 'bce':
+            self.loss_fn = SoftBCELoss(soft_label=soft_label)
+        else:  # default: 'ce'
+            self.loss_fn = SoftCrossEntropyLoss(soft_label=soft_label)
+
         # Metrics
         self.val_metrics = MetricCollection({
             'dice': Dice(num_classes=num_classes, average='macro'),
@@ -91,7 +174,7 @@ class SupervisedModel(L.LightningModule):
             'specificity': Specificity(num_classes=num_classes, average='macro'),
             'iou': JaccardIndex(num_classes=num_classes, average='macro'),
         })
-        
+
         # Test metrics (separate instance to avoid contamination)
         self.test_metrics = MetricCollection({
             'dice': Dice(num_classes=num_classes, average='macro'),
@@ -100,87 +183,83 @@ class SupervisedModel(L.LightningModule):
             'specificity': Specificity(num_classes=num_classes, average='macro'),
             'iou': JaccardIndex(num_classes=num_classes, average='macro'),
         })
-        
+
         self.vessel_metrics = MetricCollection({
             'cldice': clDice(),
             'betti_0_error': Betti0Error(),
             'betti_1_error': Betti1Error(),
         })
-        
+
         # Test vessel metrics (separate instance)
         self.test_vessel_metrics = MetricCollection({
             'cldice': clDice(),
             'betti_0_error': Betti0Error(),
             'betti_1_error': Betti1Error(),
         })
-        
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
-    
+
     def training_step(self, batch, batch_idx):
         images, labels = batch['image'], batch['label']
-        
-        # Convert binary labels to class indices (squeeze channel if present)
+
+        # Squeeze channel dimension if present
         if labels.dim() == 4:
             labels = labels.squeeze(1)  # (B, 1, H, W) -> (B, H, W)
-        labels = labels.long()
         
+        # For hard label mode, convert to long; soft label mode keeps float
+        if not self.soft_label:
+            labels = labels.long()
+
         # Forward (ModelWrapper handles dict outputs)
         logits = self(images)
-        
-        # Compute loss
+
+        # Compute loss (SoftCrossEntropyLoss handles both modes)
         loss = self.loss_fn(logits, labels)
-        
+
         # Log
         self.log('train/loss', loss, prog_bar=True)
-        
+
         return loss
-    
+
     def validation_step(self, batch, batch_idx):
         images, labels = batch['image'], batch['label']
-        
-        # Convert binary labels to class indices
+
+        # Convert soft/binary labels to class indices (threshold for soft labels)
         if labels.dim() == 4:
             labels = labels.squeeze(1)
-        labels = labels.long()
-        
+        labels = (labels > 0.5).long()
+
         # Sliding window inference (ModelWrapper handles dict outputs)
         logits = self.inferer(images, self.model)
-        
+
         # Compute loss
         loss = self.loss_fn(logits, labels)
-        
+
         # Compute metrics
         preds = torch.argmax(logits, dim=1)
-        
+
         # General metrics
         general_metrics = self.val_metrics(preds, labels)
-        
+
         # Vessel-specific metrics
         vessel_metrics = self.vessel_metrics(preds, labels)
-        
+
         # Log
         self.log('val/loss', loss, prog_bar=True)
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False)
-        
-        # DEBUG: Check all conditions
-        print(f"[DEBUG-VAL] Epoch {self.current_epoch}, batch_idx={batch_idx}")
-        print(f"[DEBUG-VAL] hasattr log_image_enabled: {hasattr(self.hparams, 'log_image_enabled')}")
-        if hasattr(self.hparams, 'log_image_enabled'):
-            print(f"[DEBUG-VAL] log_image_enabled value: {self.hparams.log_image_enabled}")
-        print(f"[DEBUG-VAL] All hparams keys: {list(vars(self.hparams).keys())}")
-        
+
         # Log images to TensorBoard (specified samples only)
         if hasattr(self.hparams, 'log_image_enabled') and self.hparams.log_image_enabled:
             log_names = getattr(self.hparams, 'log_image_names', None)
             pred_binary = (preds > 0).float()
             label_binary = (labels > 0).float()
-            
+
             for i in range(images.shape[0]):
                 sample_name = batch['name'][i] if 'name' in batch else f'sample_{i}'
                 filename = sample_name.split('/')[-1] if '/' in sample_name else sample_name
-                
+
                 # Only log if filename matches log_image_names (or log all if not specified)
                 if log_names is None or filename in log_names:
                     print(f"[DEBUG] Logging image: {filename} at epoch {self.current_epoch}")
@@ -195,43 +274,43 @@ class SupervisedModel(L.LightningModule):
                         label_binary[i:i+1],
                         self.global_step
                     )
-        
+
         return loss
-    
+
     def test_step(self, batch, batch_idx):
         images, labels = batch['image'], batch['label']
-        
+
         # Get sample names if available
         sample_names = batch.get('name', [f'sample_{batch_idx}_{i}' for i in range(images.shape[0])])
-        
-        # Convert binary labels to class indices
+
+        # Convert soft/binary labels to class indices (threshold for soft labels)
         if labels.dim() == 4:
             labels = labels.squeeze(1)
-        labels = labels.long()
-        
+        labels = (labels > 0.5).long()
+
         # Sliding window inference (ModelWrapper handles dict outputs)
         logits = self.inferer(images, self.model)
-        
+
         # Compute metrics
         preds = torch.argmax(logits, dim=1)
-        
+
         # General metrics (use test_metrics, not val_metrics!)
         general_metrics = self.test_metrics(preds, labels)
-        
+
         # Vessel-specific metrics (use test_vessel_metrics!)
         vessel_metrics = self.test_vessel_metrics(preds, labels)
 
         # Log
         self.log_dict({'test/' + k: v for k, v in general_metrics.items()})
         self.log_dict({'test/' + k: v for k, v in vessel_metrics.items()})
-        
-        
+
+
         # Store predictions for logging
         if hasattr(self.trainer, 'logger') and hasattr(self.trainer.logger, 'save_predictions'):
             # Convert to binary masks for visualization
             pred_masks = (preds > 0).float()
             label_masks = (labels > 0).float()
-            
+
             # Prepare metrics for each sample
             sample_metrics = []
             for i in range(images.shape[0]):
@@ -239,28 +318,28 @@ class SupervisedModel(L.LightningModule):
                 sample_metric.update({k: v.item() if torch.is_tensor(v) else v for k, v in general_metrics.items()})
                 sample_metric.update({k: v.item() if torch.is_tensor(v) else v for k, v in vessel_metrics.items()})
                 sample_metrics.append(sample_metric)
-            
+
             # Save predictions
             self.trainer.logger.save_predictions(
                 sample_names, images, pred_masks, label_masks, sample_metrics
             )
-        
+
         return general_metrics['dice']
-    
+
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.parameters(),
             lr=self.hparams.learning_rate,
             weight_decay=self.hparams.weight_decay,
         )
-        
+
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode='min',
             patience=20,
             factor=0.5,
         )
-        
+
         return {
             'optimizer': optimizer,
             'lr_scheduler': {

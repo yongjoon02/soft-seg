@@ -1,11 +1,11 @@
 """Model registry with metadata."""
 
 from dataclasses import dataclass
-from typing import Literal, Callable
+from typing import Callable, Literal
 
 from src.archs.components import CSNet, DSCNet
-from src.archs.components.gaussian_diffusion import create_medsegdiff
 from src.archs.components.binomial_diffusion import create_berdiff
+from src.archs.components.gaussian_diffusion import create_medsegdiff
 
 
 @dataclass

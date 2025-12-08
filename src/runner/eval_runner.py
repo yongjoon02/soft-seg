@@ -8,17 +8,17 @@ This module provides a centralized evaluation system that:
 - Supports both supervised and diffusion models
 """
 
-import torch
-import lightning as L
-from pathlib import Path
-from typing import Optional, Dict, List, Any
-import pandas as pd
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional
 
-from src.registry.models import MODEL_REGISTRY
-from src.registry.datasets import DATASET_REGISTRY
+import lightning as L
+import pandas as pd
+
 from src.experiment.tracker import ExperimentTracker
 from src.loggers import PredictionLogger
+from src.registry.datasets import DATASET_REGISTRY
+from src.registry.models import MODEL_REGISTRY
 
 
 @dataclass
@@ -40,7 +40,7 @@ class EvalRunner:
         >>> results = runner.evaluate_all_models()
         >>> runner.save_results(results, 'results/eval_results.csv')
     """
-    
+
     def __init__(
         self,
         dataset: str,
@@ -62,15 +62,15 @@ class EvalRunner:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.gpu = gpu
         self.save_predictions = save_predictions
-        
+
         # Get dataset info
         if dataset not in DATASET_REGISTRY:
             raise ValueError(f"Unknown dataset: {dataset}")
         self.dataset_info = DATASET_REGISTRY[dataset]
-        
+
         # Initialize tracker
         self.tracker = ExperimentTracker()
-    
+
     def find_best_checkpoint(self, model: str) -> Optional[Path]:
         """
         Find best checkpoint for a model on this dataset.
@@ -86,61 +86,71 @@ class EvalRunner:
         exp_dir = Path("experiments") / model / self.dataset
         if not exp_dir.exists():
             return None
-        
+
         # Find all experiment directories
         exp_runs = sorted(exp_dir.glob(f"{model}_{self.dataset}_*"))
         if not exp_runs:
             return None
-        
+
         # Search for best.ckpt in the latest run first
         for run_dir in reversed(exp_runs):
             best_ckpt = run_dir / "checkpoints" / "best.ckpt"
             if best_ckpt.exists():
                 return best_ckpt
-        
+
         return None
-    
+
     def get_data_module(self):
         """Create data module for current dataset."""
         from src.data.octa500 import OCTA500_3M_DataModule, OCTA500_6M_DataModule
-        from src.data.rossa import ROSSADataModule
-        
-        data_config = self.dataset_info.data_config
-        
+        from src.data.rossa import ROSSA_DataModule
+        from src.data.xca import XCA_DataModule
+
+        info = self.dataset_info
+
         if self.dataset == 'octa500_3m':
             return OCTA500_3M_DataModule(
-                train_dir=data_config['train_dir'],
-                val_dir=data_config['val_dir'],
-                test_dir=data_config['test_dir'],
-                crop_size=data_config['crop_size'],
+                train_dir=info.default_train_dir,
+                val_dir=info.default_val_dir,
+                test_dir=info.default_test_dir,
+                crop_size=info.default_crop_size,
                 train_bs=1,  # Batch size 1 for evaluation
             )
         elif self.dataset == 'octa500_6m':
             return OCTA500_6M_DataModule(
-                train_dir=data_config['train_dir'],
-                val_dir=data_config['val_dir'],
-                test_dir=data_config['test_dir'],
-                crop_size=data_config['crop_size'],
+                train_dir=info.default_train_dir,
+                val_dir=info.default_val_dir,
+                test_dir=info.default_test_dir,
+                crop_size=info.default_crop_size,
                 train_bs=1,
             )
         elif self.dataset == 'rossa':
-            return ROSSADataModule(
-                train_manual_dir=data_config['train_manual_dir'],
-                train_sam_dir=data_config['train_sam_dir'],
-                val_dir=data_config['val_dir'],
-                test_dir=data_config['test_dir'],
-                crop_size=data_config['crop_size'],
+            return ROSSA_DataModule(
+                train_manual_dir=info.default_train_dir,
+                train_sam_dir=info.default_train_dir.replace('train_manual', 'train_sam'),
+                val_dir=info.default_val_dir,
+                test_dir=info.default_test_dir,
+                crop_size=info.default_crop_size,
+                train_bs=1,
+            )
+        elif self.dataset == 'xca':
+            return XCA_DataModule(
+                train_dir=info.default_train_dir,
+                val_dir=info.default_val_dir,
+                test_dir=info.default_test_dir,
+                crop_size=info.default_crop_size,
                 train_bs=1,
             )
         else:
             raise ValueError(f"Unknown dataset: {self.dataset}")
-    
-    def evaluate_model(self, model_name: str) -> Optional[EvaluationResult]:
+
+    def evaluate_model(self, model_name: str, checkpoint_path: Optional[Path] = None) -> Optional[EvaluationResult]:
         """
         Evaluate a single model.
         
         Args:
             model_name: Name of the model to evaluate
+            checkpoint_path: Optional path to specific checkpoint (overrides auto-detection)
             
         Returns:
             EvaluationResult or None if evaluation failed
@@ -149,18 +159,19 @@ class EvalRunner:
         if model_name not in MODEL_REGISTRY:
             print(f"❌ Unknown model: {model_name}")
             return None
-        
+
         model_info = MODEL_REGISTRY[model_name]
-        
-        # Find checkpoint
-        checkpoint_path = self.find_best_checkpoint(model_name)
+
+        # Find checkpoint (use provided path or auto-detect)
+        if checkpoint_path is None:
+            checkpoint_path = self.find_best_checkpoint(model_name)
         if not checkpoint_path:
             print(f"❌ No checkpoint found for {model_name} on {self.dataset}")
             return None
-        
+
         print(f"📊 Evaluating {model_name} on {self.dataset}...")
         print(f"   Checkpoint: {checkpoint_path}")
-        
+
         try:
             # Load model based on task type
             if model_info.task == 'supervised':
@@ -169,11 +180,11 @@ class EvalRunner:
             else:  # diffusion
                 from src.archs.diffusion_model import DiffusionModel
                 model = DiffusionModel.load_from_checkpoint(str(checkpoint_path))
-            
+
             # Setup data
             data_module = self.get_data_module()
             data_module.setup("test")
-            
+
             # Create logger if saving predictions
             logger = None
             if self.save_predictions:
@@ -183,7 +194,7 @@ class EvalRunner:
                     name="predictions",
                     version=None
                 )
-            
+
             # Create trainer
             trainer = L.Trainer(
                 accelerator="gpu" if self.gpu is not None else "cpu",
@@ -192,19 +203,19 @@ class EvalRunner:
                 enable_checkpointing=False,
                 enable_progress_bar=True,
             )
-            
+
             # Run evaluation
             results = trainer.test(model, data_module)
-            
+
             if results and len(results) > 0:
                 metrics = results[0]
-                
+
                 # Extract experiment ID from checkpoint path
                 exp_id = checkpoint_path.parent.parent.name
-                
+
                 print(f"✅ {model_name}: Dice={metrics.get('test/dice', 0):.4f}, "
                       f"IoU={metrics.get('test/iou', 0):.4f}")
-                
+
                 return EvaluationResult(
                     model=model_name,
                     dataset=self.dataset,
@@ -212,14 +223,14 @@ class EvalRunner:
                     checkpoint_path=str(checkpoint_path),
                     experiment_id=exp_id
                 )
-            
+
         except Exception as e:
             print(f"❌ Error evaluating {model_name}: {e}")
             import traceback
             traceback.print_exc()
-        
+
         return None
-    
+
     def evaluate_models(self, models: List[str]) -> List[EvaluationResult]:
         """
         Evaluate multiple models.
@@ -231,23 +242,23 @@ class EvalRunner:
             List of evaluation results
         """
         results = []
-        
+
         print(f"\n{'='*80}")
         print(f"Evaluating {len(models)} models on {self.dataset}")
         print(f"{'='*80}\n")
-        
+
         for model_name in models:
             result = self.evaluate_model(model_name)
             if result:
                 results.append(result)
-        
+
         return results
-    
+
     def evaluate_all_models(self) -> List[EvaluationResult]:
         """Evaluate all available models."""
         models = list(MODEL_REGISTRY.keys())
         return self.evaluate_models(models)
-    
+
     def save_results(
         self,
         results: List[EvaluationResult],
@@ -266,7 +277,7 @@ class EvalRunner:
         if not results:
             print("⚠️  No results to save!")
             return None
-        
+
         # Convert to DataFrame
         rows = []
         for result in results:
@@ -280,21 +291,21 @@ class EvalRunner:
                 clean_key = key.replace('test/', '')
                 row[clean_key] = value
             rows.append(row)
-        
+
         df = pd.DataFrame(rows)
-        
+
         # Reorder columns: Model, Dataset, then metrics
-        metric_cols = [col for col in df.columns 
+        metric_cols = [col for col in df.columns
                       if col not in ['Model', 'Dataset', 'Experiment_ID']]
         df = df[['Model', 'Dataset'] + metric_cols + ['Experiment_ID']]
-        
+
         # Save to CSV
         if filename is None:
             filename = f"evaluation_{self.dataset}.csv"
-        
+
         output_path = self.output_dir / filename
         df.to_csv(output_path, index=False, float_format='%.6f')
-        
+
         # Print results
         print(f"\n{'='*80}")
         print("EVALUATION RESULTS")
@@ -302,5 +313,5 @@ class EvalRunner:
         print(df.to_string(index=False))
         print(f"{'='*80}")
         print(f"✅ Results saved to: {output_path}\n")
-        
+
         return output_path

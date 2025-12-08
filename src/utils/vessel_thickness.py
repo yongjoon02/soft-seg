@@ -5,15 +5,16 @@ This module provides functionality to measure mean vessel thickness from binary
 segmentation masks by computing the skeleton and using distance transform.
 """
 
-import numpy as np
-from pathlib import Path
-from typing import Dict, List, Tuple, Union, Optional
-import cv2
-from skimage.morphology import skeletonize, medial_axis
-from scipy import ndimage
-from tqdm import tqdm
 import json
+from pathlib import Path
+from typing import Dict, Union
+
+import cv2
+import numpy as np
 import pandas as pd
+from scipy import ndimage
+from skimage.morphology import medial_axis, skeletonize
+from tqdm import tqdm
 
 
 def compute_vessel_thickness(
@@ -40,7 +41,7 @@ def compute_vessel_thickness(
     # Ensure binary mask is boolean
     if binary_mask.max() > 1:
         binary_mask = binary_mask > 0
-    
+
     # Check if mask is empty
     if not binary_mask.any():
         return {
@@ -52,11 +53,11 @@ def compute_vessel_thickness(
             "skeleton_length": 0,
             "vessel_area": 0
         }
-    
+
     # Compute distance transform
     # This gives the distance from each vessel pixel to the nearest background pixel
     distance_map = ndimage.distance_transform_edt(binary_mask)
-    
+
     # Compute skeleton
     if method == "medial_axis":
         skeleton, distance_on_skeleton = medial_axis(binary_mask, return_distance=True)
@@ -66,11 +67,11 @@ def compute_vessel_thickness(
         skeleton = skeletonize(binary_mask)
         # Get thickness values at skeleton points
         thickness_values = distance_map[skeleton] * 2
-    
+
     # Calculate metrics
     skeleton_length = np.sum(skeleton)
     vessel_area = np.sum(binary_mask)
-    
+
     if len(thickness_values) == 0 or skeleton_length == 0:
         return {
             "mean_thickness": 0.0,
@@ -81,7 +82,7 @@ def compute_vessel_thickness(
             "skeleton_length": 0,
             "vessel_area": vessel_area
         }
-    
+
     results = {
         "mean_thickness": float(np.mean(thickness_values)),
         "median_thickness": float(np.median(thickness_values)),
@@ -91,7 +92,7 @@ def compute_vessel_thickness(
         "skeleton_length": int(skeleton_length),
         "vessel_area": int(vessel_area)
     }
-    
+
     return results
 
 
@@ -120,64 +121,64 @@ def process_dataset(
     label_dir = Path(label_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Find all label files
     label_files = sorted(list(label_dir.glob(file_pattern)))
-    
+
     if len(label_files) == 0:
         print(f"No files found in {label_dir} matching pattern {file_pattern}")
         return pd.DataFrame()
-    
+
     print(f"Found {len(label_files)} label files")
-    
+
     # Process each file
     results_list = []
-    
+
     for label_file in tqdm(label_files, desc="Processing labels"):
         # Read image
         image = cv2.imread(str(label_file), cv2.IMREAD_GRAYSCALE)
-        
+
         if image is None:
             print(f"Warning: Could not read {label_file}")
             continue
-        
+
         # Compute thickness metrics
         metrics = compute_vessel_thickness(image, method=method)
-        
+
         # Add sample_name and filename
         sample_name = label_file.stem
         metrics["sample_name"] = sample_name
         metrics["filename"] = label_file.name
         metrics["file_stem"] = label_file.stem
-        
+
         results_list.append(metrics)
-        
+
         # Save individual results
         if save_individual:
             individual_output = output_dir / "individual_results"
             individual_output.mkdir(exist_ok=True)
             with open(individual_output / f"{label_file.stem}.json", "w") as f:
                 json.dump(metrics, f, indent=2)
-        
+
         # Save visualizations
         if save_visualizations:
             vis_output = output_dir / "visualizations"
             vis_output.mkdir(exist_ok=True)
             save_visualization(image, label_file.stem, vis_output, method)
-    
+
     # Create DataFrame
     df = pd.DataFrame(results_list)
-    
+
     # Reorder columns to put sample_name first
     if "sample_name" in df.columns:
         cols = ["sample_name"] + [col for col in df.columns if col != "sample_name"]
         df = df[cols]
-    
+
     # Save summary statistics
     summary_file = output_dir / "summary_statistics.csv"
     df.to_csv(summary_file, index=False)
     print(f"\nSaved summary statistics to {summary_file}")
-    
+
     # Compute and save aggregate statistics
     aggregate_stats = {
         "dataset_mean_thickness": float(df["mean_thickness"].mean()),
@@ -190,12 +191,12 @@ def process_dataset(
         "total_vessel_area": int(df["vessel_area"].sum()),
         "method": method
     }
-    
+
     with open(output_dir / "aggregate_statistics.json", "w") as f:
         json.dump(aggregate_stats, f, indent=2)
-    
+
     print(f"\n{'='*60}")
-    print(f"Dataset-level Statistics:")
+    print("Dataset-level Statistics:")
     print(f"{'='*60}")
     print(f"Total images processed: {aggregate_stats['total_images']}")
     print(f"Mean vessel thickness (average across images): {aggregate_stats['dataset_mean_thickness']:.3f} pixels")
@@ -203,7 +204,7 @@ def process_dataset(
     print(f"Total vessel area: {aggregate_stats['total_vessel_area']:,} pixels")
     print(f"Total skeleton length: {aggregate_stats['total_skeleton_length']:,} pixels")
     print(f"{'='*60}")
-    
+
     return df
 
 
@@ -225,34 +226,34 @@ def save_visualization(
     # Ensure binary
     if binary_mask.max() > 1:
         binary_mask = binary_mask > 0
-    
+
     # Compute skeleton and distance map
     distance_map = ndimage.distance_transform_edt(binary_mask)
-    
+
     if method == "medial_axis":
         skeleton, _ = medial_axis(binary_mask, return_distance=True)
     else:
         skeleton = skeletonize(binary_mask)
-    
+
     # Create RGB visualization
     vis = np.zeros((binary_mask.shape[0], binary_mask.shape[1], 3), dtype=np.uint8)
-    
+
     # Original mask in gray
     vis[binary_mask] = [128, 128, 128]
-    
+
     # Skeleton in red
     vis[skeleton] = [0, 0, 255]
-    
+
     # Save
     output_path = output_dir / f"{filename_stem}_skeleton.png"
     cv2.imwrite(str(output_path), vis)
-    
+
     # Also save distance map as heatmap
     if binary_mask.any():
         distance_normalized = (distance_map * 255 / distance_map.max()).astype(np.uint8)
         distance_colored = cv2.applyColorMap(distance_normalized, cv2.COLORMAP_JET)
         distance_colored[~binary_mask] = 0
-        
+
         heatmap_path = output_dir / f"{filename_stem}_distance.png"
         cv2.imwrite(str(heatmap_path), distance_colored)
 
@@ -260,7 +261,7 @@ def save_visualization(
 def main():
     """Main function for command-line usage."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(
         description="Measure vessel thickness from binary segmentation masks"
     )
@@ -299,11 +300,11 @@ def main():
         action="store_true",
         help="Save visualization images"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Process dataset
-    df = process_dataset(
+    process_dataset(
         label_dir=args.label_dir,
         output_dir=args.output_dir,
         method=args.method,
@@ -311,7 +312,7 @@ def main():
         save_individual=args.save_individual,
         save_visualizations=args.save_visualizations
     )
-    
+
     print(f"\nProcessing complete! Results saved to {args.output_dir}")
 
 

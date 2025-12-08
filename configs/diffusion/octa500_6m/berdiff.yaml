@@ -1,23 +1,20 @@
-# BerDiff - OCTA500 3M Diffusion Model Configuration
 model:
   arch_name: berdiff
   image_size: 224
   dim: 64
-  timesteps: 1000
+  timesteps: 100
   learning_rate: 0.0002
   weight_decay: 0.00001
-  num_classes: 2
+  experiment_name: berdiff
+  data_name: octa500_6m
+  num_ensemble: 5
   use_ema: true
   ema_decay: 0.9999
-  num_ensemble: 1
-  # Soft label generation settings
-  soft_label_type: none
-  soft_label_cache: true
-  soft_label_fg_max: 11
-  soft_label_thickness_max: 13
-  soft_label_kernel_ratio: 0.1
-  # Image logging to TensorBoard
   log_image_enabled: true
+  log_image_names:
+    - '10181.bmp'
+    - '10185.bmp'
+    - '10190.bmp'
 
 data:
   name: octa500_6m
@@ -25,17 +22,17 @@ data:
   val_dir: data/OCTA500_6M/val
   test_dir: data/OCTA500_6M/test
   crop_size: 224
-  train_bs: 8
-  num_workers: 8
+  train_bs: 4
+  num_samples_per_image: 16
 
 trainer:
   max_epochs: 500
   accelerator: gpu
   devices: 1
-  precision: 32-true  # FP32 required for Binomial distribution
-  log_every_n_steps: 50
-  check_val_every_n_epoch: 10
-  accumulate_grad_batches: 2  # Effective batch size = 16
+  precision: 32-true
+  enable_progress_bar: false
+  check_val_every_n_epoch: 25
+  accumulate_grad_batches: 2
   gradient_clip_val: 1.0
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
@@ -44,7 +41,6 @@ trainer:
         mode: max
         save_last: true
         verbose: true
-
   logger:
     class_path: lightning.pytorch.loggers.TensorBoardLogger
     init_args:

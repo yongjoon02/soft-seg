@@ -6,7 +6,6 @@ Paper: "CS-Net: Channel and Spatial Attention Network for Curvilinear Structure 
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 def initialize_weights(*models):
@@ -24,7 +23,7 @@ def initialize_weights(*models):
 
 class ResEncoder(nn.Module):
     """Residual Encoder Block."""
-    
+
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
@@ -45,7 +44,7 @@ class ResEncoder(nn.Module):
 
 class Decoder(nn.Module):
     """Decoder Block."""
-    
+
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
         self.conv = nn.Sequential(
@@ -63,7 +62,7 @@ class Decoder(nn.Module):
 
 class SpatialAttentionBlock(nn.Module):
     """Spatial Attention Block using asymmetric convolutions."""
-    
+
     def __init__(self, in_channels: int):
         super().__init__()
         self.query = nn.Sequential(
@@ -88,24 +87,24 @@ class SpatialAttentionBlock(nn.Module):
             affinity value + x
         """
         B, C, H, W = x.size()
-        
+
         # Query: [B, C//8, H, W] -> [B, H*W, C//8]
         proj_query = self.query(x).view(B, -1, W * H).permute(0, 2, 1)
-        
+
         # Key: [B, C//8, H, W] -> [B, C//8, H*W]
         proj_key = self.key(x).view(B, -1, W * H)
-        
+
         # Affinity: [B, H*W, H*W]
         affinity = torch.matmul(proj_query, proj_key)
         affinity = self.softmax(affinity)
-        
+
         # Value: [B, C, H, W] -> [B, C, H*W]
         proj_value = self.value(x).view(B, -1, H * W)
-        
+
         # Weighted sum: [B, C, H*W]
         weights = torch.matmul(proj_value, affinity.permute(0, 2, 1))
         weights = weights.view(B, C, H, W)
-        
+
         # Residual connection with learnable weight
         out = self.gamma * weights + x
         return out
@@ -113,7 +112,7 @@ class SpatialAttentionBlock(nn.Module):
 
 class ChannelAttentionBlock(nn.Module):
     """Channel Attention Block."""
-    
+
     def __init__(self, in_channels: int):
         super().__init__()
         self.gamma = nn.Parameter(torch.zeros(1))
@@ -127,27 +126,27 @@ class ChannelAttentionBlock(nn.Module):
             affinity value + x
         """
         B, C, H, W = x.size()
-        
+
         # Query: [B, C, H*W]
         proj_query = x.view(B, C, -1)
-        
+
         # Key: [B, H*W, C]
         proj_key = x.view(B, C, -1).permute(0, 2, 1)
-        
+
         # Affinity: [B, C, C]
         affinity = torch.matmul(proj_query, proj_key)
-        
+
         # Max pooling trick for better performance
         affinity_new = torch.max(affinity, -1, keepdim=True)[0].expand_as(affinity) - affinity
         affinity_new = self.softmax(affinity_new)
-        
+
         # Value: [B, C, H*W]
         proj_value = x.view(B, C, -1)
-        
+
         # Weighted sum: [B, C, H*W]
         weights = torch.matmul(affinity_new, proj_value)
         weights = weights.view(B, C, H, W)
-        
+
         # Residual connection with learnable weight
         out = self.gamma * weights + x
         return out
@@ -155,7 +154,7 @@ class ChannelAttentionBlock(nn.Module):
 
 class AffinityAttention(nn.Module):
     """Affinity Attention Module combining Spatial and Channel Attention."""
-    
+
     def __init__(self, in_channels: int):
         super().__init__()
         self.sab = SpatialAttentionBlock(in_channels)
@@ -183,38 +182,38 @@ class CSNet(nn.Module):
         in_channels: number of input channels (default: 1 for grayscale)
         num_classes: number of output classes (default: 2 for binary segmentation)
     """
-    
+
     def __init__(self, in_channels: int = 1, num_classes: int = 2):
         super().__init__()
-        
+
         # Encoder with residual blocks
         self.enc_input = ResEncoder(in_channels, 32)
         self.encoder1 = ResEncoder(32, 64)
         self.encoder2 = ResEncoder(64, 128)
         self.encoder3 = ResEncoder(128, 256)
         self.encoder4 = ResEncoder(256, 512)
-        
+
         # Downsampling
         self.downsample = nn.MaxPool2d(kernel_size=2, stride=2)
-        
+
         # Affinity Attention (bottleneck)
         self.affinity_attention = AffinityAttention(512)
-        
+
         # Decoder
         self.decoder4 = Decoder(512, 256)
         self.decoder3 = Decoder(256, 128)
         self.decoder2 = Decoder(128, 64)
         self.decoder1 = Decoder(64, 32)
-        
+
         # Upsampling (transposed convolution)
         self.deconv4 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
         self.deconv3 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
         self.deconv2 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         self.deconv1 = nn.ConvTranspose2d(64, 32, kernel_size=2, stride=2)
-        
+
         # Final output layer
         self.final = nn.Conv2d(32, num_classes, kernel_size=1)
-        
+
         # Initialize weights
         initialize_weights(self)
 
@@ -256,7 +255,7 @@ class CSNet(nn.Module):
 
         # Final output (no sigmoid - will be applied in loss function)
         final = self.final(dec1)
-        
+
         return final
 
 

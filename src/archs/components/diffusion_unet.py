@@ -4,14 +4,14 @@
 
 Two separate implementations with different conditioning approaches.
 """
-import math
 import copy
-import torch
-import torch.nn.functional as F
-from einops import rearrange
-from torch import nn, einsum
-from functools import partial
+import math
 from collections import namedtuple
+from functools import partial
+
+import torch
+from einops import rearrange
+from torch import einsum, nn
 from torch.fft import fft2, ifft2
 
 # Constants
@@ -320,30 +320,30 @@ class FFTConditioning(nn.Module):
         """
         dtype = x.dtype
         b, c_dim, h, w = x.shape
-        
+
         # FF-parser: modulate high frequencies
         x_fft = fft2(x)
-        
+
         # Dynamically resize attention map if needed
         if h != self.default_fmap_size or w != self.default_fmap_size:
             # Resize attention map to match input size
             attn_map = torch.nn.functional.interpolate(
-                self.ff_parser_attn_map.unsqueeze(0), 
-                size=(h, w), 
-                mode='bilinear', 
+                self.ff_parser_attn_map.unsqueeze(0),
+                size=(h, w),
+                mode='bilinear',
                 align_corners=False
             ).squeeze(0)
         else:
             attn_map = self.ff_parser_attn_map
-        
+
         x_fft = x_fft * attn_map
         x = ifft2(x_fft).real.type(dtype)
-        
+
         # Eq 3 in paper: c = (norm(x) * norm(c)) * c
         normed_x = self.norm_input(x)
         normed_c = self.norm_condition(c)
         c = (normed_x * normed_c) * c
-        
+
         # Extra block for information integration
         return self.block(c)
 
@@ -369,30 +369,30 @@ class NATTENConditioning(nn.Module):
         """
         dtype = x.dtype
         b, c_dim, h, w = x.shape
-        
+
         # FF-parser: modulate high frequencies
         x_fft = fft2(x)
-        
+
         # Dynamically resize attention map if needed
         if h != self.default_fmap_size or w != self.default_fmap_size:
             # Resize attention map to match input size
             attn_map = torch.nn.functional.interpolate(
-                self.ff_parser_attn_map.unsqueeze(0), 
-                size=(h, w), 
-                mode='bilinear', 
+                self.ff_parser_attn_map.unsqueeze(0),
+                size=(h, w),
+                mode='bilinear',
                 align_corners=False
             ).squeeze(0)
         else:
             attn_map = self.ff_parser_attn_map
-        
+
         x_fft = x_fft * attn_map
         x = ifft2(x_fft).real.type(dtype)
-        
+
         # Eq 3 in paper: c = (norm(x) * norm(c)) * c
         normed_x = self.norm_input(x)
         normed_c = self.norm_condition(c)
         c = (normed_x * normed_c) * c
-        
+
         # Extra block for information integration
         return self.block(c)
 
@@ -404,16 +404,16 @@ class SegDiffUNet(nn.Module):
                  dim_mult=(1, 2, 4, 8), full_self_attn=(False, False, True, True), attn_dim_head=32,
                  attn_heads=4, resnet_block_groups=8, rrdb_blocks=3):
         super().__init__()
-        
+
         self.image_size = image_size
         self.mask_channels = mask_channels
         self.input_img_channels = input_img_channels
-        
+
         init_dim = default(init_dim, dim)
-        
+
         # F model: process x_t
         self.F_model = nn.Conv2d(mask_channels, init_dim, 3, padding=1)
-        
+
         # G model: RRDB encoder for conditioning image
         RRDB_block_f = partial(RRDB, nf=init_dim, gc=32)
         self.G_model = nn.Sequential(
@@ -422,7 +422,7 @@ class SegDiffUNet(nn.Module):
             nn.Conv2d(init_dim, init_dim, 3, 1, 1),
             nn.LeakyReLU(negative_slope=0.2, inplace=True)
         )
-        
+
         # Time embedding
         time_dim = dim * 4
         self.time_mlp = nn.Sequential(
@@ -430,13 +430,13 @@ class SegDiffUNet(nn.Module):
             nn.Linear(dim, time_dim),
             nn.GELU(),
             nn.Linear(time_dim, time_dim))
-        
+
         # UNet
         dims = [init_dim, *map(lambda m: dim * m, dim_mult)]
         in_out = list(zip(dims[:-1], dims[1:]))
         block_klass = partial(ResnetBlock, groups=resnet_block_groups)
         attn_kwargs = dict(dim_head=attn_dim_head, heads=attn_heads)
-        
+
         self.downs = nn.ModuleList([])
         for ind, ((dim_in, dim_out), full_attn) in enumerate(zip(in_out, full_self_attn)):
             is_last = ind >= (len(in_out) - 1)
@@ -446,12 +446,12 @@ class SegDiffUNet(nn.Module):
                 block_klass(dim_in, dim_in, time_emb_dim=time_dim),
                 Residual(attn_klass(dim_in, **attn_kwargs)),
                 downsample(dim_in, dim_out) if not is_last else nn.Conv2d(dim_in, dim_out, 3, padding=1)]))
-        
+
         mid_dim = dims[-1]
         self.mid_block1 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
         self.mid_attn = Residual(Attention(mid_dim, **attn_kwargs))
         self.mid_block2 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
-        
+
         self.ups = nn.ModuleList([])
         for ind, ((dim_in, dim_out), full_attn) in enumerate(zip(reversed(in_out), reversed(full_self_attn))):
             is_last = ind == (len(in_out) - 1)
@@ -461,7 +461,7 @@ class SegDiffUNet(nn.Module):
                 block_klass(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
                 Residual(attn_klass(dim_out, **attn_kwargs)),
                 upsample(dim_out, dim_in) if not is_last else nn.Conv2d(dim_out, dim_in, 3, padding=1)]))
-        
+
         self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
         self.final_conv = nn.Conv2d(dim, mask_channels, 1)
 
@@ -469,11 +469,11 @@ class SegDiffUNet(nn.Module):
         # F(x_t) + G(I) -> UNet
         F_out = self.F_model(x)
         G_out = self.G_model(cond)
-        
+
         x = F_out + G_out  # Key difference: addition of F and G
         r = x.clone()
         t = self.time_mlp(time)
-        
+
         h = []
         for block1, block2, attn, dsample in self.downs:
             x = block1(x, t)
@@ -482,11 +482,11 @@ class SegDiffUNet(nn.Module):
             x = attn(x)
             h.append(x)
             x = dsample(x)
-        
+
         x = self.mid_block1(x, t)
         x = self.mid_attn(x)
         x = self.mid_block2(x, t)
-        
+
         for block1, block2, attn, upsample_layer in self.ups:
             x = torch.cat((x, h.pop()), dim=1)
             x = block1(x, t)
@@ -494,7 +494,7 @@ class SegDiffUNet(nn.Module):
             x = block2(x, t)
             x = attn(x)
             x = upsample_layer(x)
-        
+
         x = torch.cat((x, r), dim=1)
         x = self.final_res_block(x, t)
         return self.final_conv(x)
@@ -514,16 +514,16 @@ class SimpleConcatUNet(nn.Module):
                  dim_mult=(1, 2, 4, 8), full_self_attn=(False, False, True, True), attn_dim_head=32,
                  attn_heads=4, resnet_block_groups=8):
         super().__init__()
-        
+
         self.image_size = image_size
         self.mask_channels = mask_channels
         self.input_img_channels = input_img_channels
-        
+
         init_dim = default(init_dim, dim)
-        
+
         # Initial conv takes concatenated input: [x_t, cond]
         self.init_conv = nn.Conv2d(mask_channels + input_img_channels, init_dim, 7, padding=3)
-        
+
         # Time embedding
         time_dim = dim * 4
         self.time_mlp = nn.Sequential(
@@ -531,13 +531,13 @@ class SimpleConcatUNet(nn.Module):
             nn.Linear(dim, time_dim),
             nn.GELU(),
             nn.Linear(time_dim, time_dim))
-        
+
         # UNet
         dims = [init_dim, *map(lambda m: dim * m, dim_mult)]
         in_out = list(zip(dims[:-1], dims[1:]))
         block_klass = partial(ResnetBlock, groups=resnet_block_groups)
         attn_kwargs = dict(dim_head=attn_dim_head, heads=attn_heads)
-        
+
         self.downs = nn.ModuleList([])
         for ind, ((dim_in, dim_out), full_attn) in enumerate(zip(in_out, full_self_attn)):
             is_last = ind >= (len(in_out) - 1)
@@ -547,12 +547,12 @@ class SimpleConcatUNet(nn.Module):
                 block_klass(dim_in, dim_in, time_emb_dim=time_dim),
                 Residual(attn_klass(dim_in, **attn_kwargs)),
                 downsample(dim_in, dim_out) if not is_last else nn.Conv2d(dim_in, dim_out, 3, padding=1)]))
-        
+
         mid_dim = dims[-1]
         self.mid_block1 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
         self.mid_attn = Residual(Attention(mid_dim, **attn_kwargs))
         self.mid_block2 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
-        
+
         self.ups = nn.ModuleList([])
         for ind, ((dim_in, dim_out), full_attn) in enumerate(zip(reversed(in_out), reversed(full_self_attn))):
             is_last = ind == (len(in_out) - 1)
@@ -562,7 +562,7 @@ class SimpleConcatUNet(nn.Module):
                 block_klass(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
                 Residual(attn_klass(dim_out, **attn_kwargs)),
                 upsample(dim_out, dim_in) if not is_last else nn.Conv2d(dim_out, dim_in, 3, padding=1)]))
-        
+
         self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
         self.final_conv = nn.Conv2d(dim, mask_channels, 1)
 
@@ -578,11 +578,11 @@ class SimpleConcatUNet(nn.Module):
         """
         # Concat noisy mask and condition image
         x = torch.cat([x, cond], dim=1)  # (B, mask_channels + input_img_channels, H, W)
-        
+
         x = self.init_conv(x)
         r = x.clone()
         t = self.time_mlp(time)
-        
+
         h = []
         for block1, block2, attn, dsample in self.downs:
             x = block1(x, t)
@@ -591,11 +591,11 @@ class SimpleConcatUNet(nn.Module):
             x = attn(x)
             h.append(x)
             x = dsample(x)
-        
+
         x = self.mid_block1(x, t)
         x = self.mid_attn(x)
         x = self.mid_block2(x, t)
-        
+
         for block1, block2, attn, upsample_layer in self.ups:
             x = torch.cat((x, h.pop()), dim=1)
             x = block1(x, t)
@@ -603,11 +603,11 @@ class SimpleConcatUNet(nn.Module):
             x = block2(x, t)
             x = attn(x)
             x = upsample_layer(x)
-        
+
         x = torch.cat((x, r), dim=1)
         x = self.final_res_block(x, t)
         x = self.final_conv(x)
-        
+
         # Apply sigmoid for BerDiff (Binomial Diffusion): output must be in [0, 1]
         return torch.sigmoid(x)
 
@@ -620,103 +620,103 @@ class MedSegDiffUNet(nn.Module):
                  attn_heads=4, mid_transformer_depth=1, resnet_block_groups=8,
                  skip_connect_condition_fmap=False):
         super().__init__()
-        
+
         self.image_size = image_size
         self.mask_channels = mask_channels
         self.input_img_channels = input_img_channels
         self.skip_connect_condition_fmap = skip_connect_condition_fmap
-        
+
         init_dim = default(init_dim, dim)
-        
+
         # Separate init convs for mask and condition
         self.init_conv = nn.Conv2d(mask_channels, init_dim, 7, padding=3)
         self.cond_init_conv = nn.Conv2d(input_img_channels, init_dim, 7, padding=3)
-        
+
         time_dim = dim * 4
         self.time_mlp = nn.Sequential(
             SinusoidalPosEmb(dim),
             nn.Linear(dim, time_dim),
             nn.GELU(),
             nn.Linear(time_dim, time_dim))
-        
+
         dims = [init_dim, *map(lambda m: dim * m, dim_mult)]
         in_out = list(zip(dims[:-1], dims[1:]))
         block_klass = partial(ResnetBlock, groups=resnet_block_groups)
         attn_kwargs = dict(dim_head=attn_dim_head, heads=attn_heads)
-        
+
         curr_fmap_size = image_size
         self.downs = nn.ModuleList([])
         self.conditioners = nn.ModuleList([])
-        
+
         for ind, ((dim_in, dim_out), full_attn) in enumerate(zip(in_out, full_self_attn)):
             is_last = ind >= (len(in_out) - 1)
             attn_klass = Attention if full_attn else LinearAttention
-            
+
             self.conditioners.append(FFTConditioning(curr_fmap_size, dim_in))
-            
+
             self.downs.append(nn.ModuleList([
                 block_klass(dim_in, dim_in, time_emb_dim=time_dim),
                 block_klass(dim_in, dim_in, time_emb_dim=time_dim),
                 Residual(attn_klass(dim_in, **attn_kwargs)),
                 downsample(dim_in, dim_out) if not is_last else nn.Conv2d(dim_in, dim_out, 3, padding=1)]))
-            
+
             if not is_last:
                 curr_fmap_size //= 2
-        
+
         mid_dim = dims[-1]
         self.mid_block1 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
         self.mid_transformer = MIDTransformer(mid_dim, depth=mid_transformer_depth, **attn_kwargs)
         self.mid_block2 = block_klass(mid_dim, mid_dim, time_emb_dim=time_dim)
-        
+
         self.cond_downs = copy.deepcopy(self.downs)
         self.cond_mid_block1 = copy.deepcopy(self.mid_block1)
-        
+
         self.ups = nn.ModuleList([])
         for ind, ((dim_in, dim_out), full_attn) in enumerate(zip(reversed(in_out), reversed(full_self_attn))):
             is_last = ind == (len(in_out) - 1)
             attn_klass = Attention if full_attn else LinearAttention
             skip_connect_dim = dim_in * (2 if skip_connect_condition_fmap else 1)
-            
+
             self.ups.append(nn.ModuleList([
                 block_klass(dim_out + skip_connect_dim, dim_out, time_emb_dim=time_dim),
                 block_klass(dim_out + skip_connect_dim, dim_out, time_emb_dim=time_dim),
                 Residual(attn_klass(dim_out, **attn_kwargs)),
                 upsample(dim_out, dim_in) if not is_last else nn.Conv2d(dim_out, dim_in, 3, padding=1)]))
-        
+
         self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
         self.final_conv = nn.Conv2d(dim, mask_channels, 1)
 
     def forward(self, x, time, cond):
         skip_connect_c = self.skip_connect_condition_fmap
-        
+
         x = self.init_conv(x)
         c = self.cond_init_conv(cond)
         r = x.clone()
         t = self.time_mlp(time)
-        
+
         h = []
         for (block1, block2, attn, dsample), (cond_block1, cond_block2, cond_attn, cond_dsample), conditioner in \
                 zip(self.downs, self.cond_downs, self.conditioners):
             x = block1(x, t)
             c = cond_block1(c, t)
             h.append([x, c] if skip_connect_c else [x])
-            
+
             x = block2(x, t)
             c = cond_block2(c, t)
             x = attn(x)
             c = cond_attn(c)
             x = conditioner(x, c)  # FFT conditioning with conditional features
             h.append([x, c] if skip_connect_c else [x])
-            
+
             x = dsample(x)
             c = cond_dsample(c)
-        
+
         x = self.mid_block1(x, t)
         c = self.cond_mid_block1(c, t)
         x = x + c
         x = self.mid_transformer(x, c)
         x = self.mid_block2(x, t)
-        
+
         for block1, block2, attn, upsample_layer in self.ups:
             x = torch.cat((x, *h.pop()), dim=1)
             x = block1(x, t)
@@ -724,7 +724,7 @@ class MedSegDiffUNet(nn.Module):
             x = block2(x, t)
             x = attn(x)
             x = upsample_layer(x)
-        
+
         x = torch.cat((x, r), dim=1)
         x = self.final_res_block(x, t)
         return self.final_conv(x)
@@ -741,12 +741,12 @@ if __name__ == "__main__":
     print("=" * 70)
     print("Testing UNet Architectures")
     print("=" * 70)
-    
+
     # Test UNet architectures
     img = torch.randn(2, 1, 224, 224)
     cond = torch.randn(2, 1, 224, 224)
     time = torch.randint(0, 1000, (2,))
-    
+
     print("\n1. SegDiffUNet (RRDB-based conditioning: F(x_t) + G(cond))")
     segdiff_unet = SegDiffUNet(
         dim=64,
@@ -760,7 +760,7 @@ if __name__ == "__main__":
     output = segdiff_unet(img, time, cond)
     params = sum(p.numel() for p in segdiff_unet.parameters())
     print(f"   Output shape: {output.shape}, Params: {params:,}")
-    
+
     print("\n2. SimpleConcatUNet (Concat-based: concat([x_t, cond]))")
     simple_unet = SimpleConcatUNet(
         dim=64,
@@ -773,7 +773,7 @@ if __name__ == "__main__":
     output = simple_unet(img, time, cond)
     params = sum(p.numel() for p in simple_unet.parameters())
     print(f"   Output shape: {output.shape}, Params: {params:,}")
-    
+
     print("\n3. MedSegDiffUNet (FFT-based conditioning: dual path)")
     medsegdiff_unet = MedSegDiffUNet(
         dim=64,
@@ -787,7 +787,7 @@ if __name__ == "__main__":
     output = medsegdiff_unet(img, time, cond)
     params = sum(p.numel() for p in medsegdiff_unet.parameters())
     print(f"   Output shape: {output.shape}, Params: {params:,}")
-    
+
     print("\n" + "=" * 70)
     print("✓ All UNet architectures work correctly!")
     print("=" * 70)

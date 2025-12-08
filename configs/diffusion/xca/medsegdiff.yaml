@@ -20,9 +20,9 @@ model:
 
 data:
   name: xca
-  train_dir: data/xca_dataset_split/train
-  val_dir: data/xca_dataset_split/val
-  test_dir: data/xca_dataset_split/test
+  train_dir: data/xca_full/train
+  val_dir: data/xca_full/val
+  test_dir: data/xca_full/test
   crop_size: 320
   train_bs: 4
   num_samples_per_image: 16

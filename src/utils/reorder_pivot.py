@@ -6,7 +6,7 @@ import pandas as pd
 # Desired network order
 network_order = [
     'berdiff',
-    'medsegdiff', 
+    'medsegdiff',
     'segdiff',
     'colddiff',
     'vesselnet',

@@ -2,9 +2,9 @@
 Based on original implementation: https://github.com/YaoleiQi/DSCNet
 """
 
+import einops
 import torch
 from torch import nn
-import einops
 
 
 class DSConv_pro(nn.Module):
@@ -576,7 +576,7 @@ class DSCNet_pro(nn.Module):
 
 class DSCNet(nn.Module):
     """Wrapper for DSCNet_pro with simplified interface."""
-    
+
     def __init__(
         self,
         in_channels: int = 1,
@@ -598,7 +598,7 @@ class DSCNet(nn.Module):
             number=base_channels,
             dim=1,
         )
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
@@ -607,19 +607,19 @@ if __name__ == "__main__":
     device = torch.device("cuda")
     model = DSCNet(in_channels=1, num_classes=2, base_channels=32, kernel_size=9).to(device)
     model.eval()
-    
+
     # Count parameters
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    
+
     print(f"Total parameters: {total_params:,}")
     print(f"Trainable parameters: {trainable_params:,}")
-    
+
     x = torch.randn(2, 1, 224, 224, device=device)
-    
+
     with torch.no_grad():
         output = model(x)
-    
+
     print(f"Input: {x.shape} -> Output: {output.shape}")
     print(f"Output range: [{output.min():.3f}, {output.max():.3f}]")
     print("✓ Test passed!")

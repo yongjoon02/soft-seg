@@ -1,4 +1,3 @@
-import autorootcwd
 
 class Registry():
     def __init__(self, name):
@@ -8,11 +7,11 @@ class Registry():
     def _do_register(self, name, obj, suffix=None):
         if isinstance(suffix, str):
             name = name + '_' + suffix # ex) UNet_model
-        
+
         # Allow re-registration (for module reloading and direct script execution)
         if name in self._obj_map:
             pass  # Silently overwrite
-        
+
         self._obj_map[name] = obj
         # print(f"Registering {name} to {self._name} registry.")  # 로그 제거
 
@@ -24,12 +23,12 @@ class Registry():
                 self._do_register(register_name, func_or_class, suffix)
                 return func_or_class
             return deco
-        
+
         # used as a function call
         if name is None:
             name = obj.__name__
         self._do_register(name, obj, suffix)
-    
+
     def get(self, name, suffix='basicsr'):
         ret = self._obj_map.get(name)
         if ret is None:
@@ -38,11 +37,11 @@ class Registry():
         if ret is None:
             raise KeyError(f"No object named {name} found in {self._name} registry.")
         return ret
-    
-    
+
+
     def __contains__(self, name):
         return name in self._obj_map
-    
+
     def __iter__(self):
         return iter(self._obj_map.items())
 

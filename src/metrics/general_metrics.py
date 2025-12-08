@@ -1,10 +1,10 @@
 """General segmentation metrics using torchmetrics."""
 
 from torchmetrics.classification import (
+    MulticlassJaccardIndex,
     MulticlassPrecision,
     MulticlassRecall,
     MulticlassSpecificity,
-    MulticlassJaccardIndex,
 )
 from torchmetrics.segmentation.dice import DiceScore as Dice
 
@@ -16,7 +16,7 @@ JaccardIndex = MulticlassJaccardIndex
 
 __all__ = [
     'Dice',
-    'Precision', 
+    'Precision',
     'Recall',
     'Specificity',
     'JaccardIndex',

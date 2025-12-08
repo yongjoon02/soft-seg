@@ -1,7 +1,7 @@
 """Architecture modules for diffusion-based segmentation."""
 
-from .supervised_model import SupervisedModel
 from .diffusion_model import DiffusionModel
+from .supervised_model import SupervisedModel
 
 __all__ = [
     'SupervisedModel',

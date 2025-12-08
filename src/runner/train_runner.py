@@ -1,25 +1,26 @@
 """Training runner - config-based training logic."""
 
-import torch
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
 import lightning as L
+import torch
 from lightning.pytorch.callbacks import (
-    ModelCheckpoint,
     LearningRateMonitor,
+    ModelCheckpoint,
     StochasticWeightAveraging,
 )
 
-from src.registry import get_model_info, get_dataset_info
-from src.experiment import ExperimentTracker, EnhancedTensorBoardLogger
-from src.archs.supervised_model import SupervisedModel
 from src.archs.diffusion_model import DiffusionModel
+from src.archs.supervised_model import SupervisedModel
+from src.experiment import EnhancedTensorBoardLogger, ExperimentTracker
+from src.registry import get_dataset_info, get_model_info
 from src.utils.config import save_config
 
 
 class TrainRunner:
     """Config-based training runner."""
-    
+
     def __init__(self, config: Dict[str, Any]):
         """Initialize from config dictionary.
         
@@ -30,32 +31,32 @@ class TrainRunner:
         model_cfg = config['model']
         data_cfg = config['data']
         trainer_cfg = config['trainer']
-        
+
         self.model_name = model_cfg['arch_name']
         self.dataset_name = data_cfg['name']
-        
+
         # Get registry info
         self.model_info = get_model_info(self.model_name)
         self.dataset_info = get_dataset_info(self.dataset_name)
-        
+
         # Store config
         self.config = config
         self.model_cfg = model_cfg
         self.data_cfg = data_cfg
         self.trainer_cfg = trainer_cfg
-        
+
         # Extract special flags
         self.tag = config.get('tag', None)
         self.resume = config.get('resume', None)
         self.debug = config.get('debug', False)
-        
+
         # Create experiment tracker
         self.tracker = ExperimentTracker()
-    
+
     def run(self):
         """Execute training."""
         self._print_info()
-        
+
         # Create experiment
         experiment = self.tracker.create_experiment(
             model=self.model_name,
@@ -63,15 +64,15 @@ class TrainRunner:
             config=self.config,
             tag=self.tag,
         )
-        
+
         print(f"\n{'='*60}")
         print(f"Experiment ID: {experiment.id}")
         print(f"Experiment dir: {experiment.dir}")
         print(f"{'='*60}\n")
-        
+
         # Save config to experiment dir
         save_config(self.config, experiment.dir / "config.yaml")
-        
+
         try:
             # Create components
             datamodule = self._create_datamodule()
@@ -79,11 +80,11 @@ class TrainRunner:
             callbacks = self._create_callbacks(experiment.dir)
             logger = self._create_logger(experiment.dir)
             trainer = self._create_trainer(callbacks, logger)
-            
+
             # Train
             print("Starting training...")
             trainer.fit(model, datamodule, ckpt_path=self.resume)
-            
+
             # Finish experiment
             final_metrics = {
                 k: v.item() if torch.is_tensor(v) else v
@@ -91,21 +92,21 @@ class TrainRunner:
                 if 'val/' in k
             }
             best_ckpt = experiment.dir / "checkpoints" / "best.ckpt"
-            
+
             self.tracker.finish_experiment(
                 experiment.id,
                 final_metrics=final_metrics,
                 best_checkpoint=str(best_ckpt) if best_ckpt.exists() else None,
             )
-            
+
             print(f"\n{'='*60}")
-            print(f"✅ Training completed!")
+            print("✅ Training completed!")
             print(f"   Best checkpoint: {best_ckpt}")
-            print(f"   Final metrics:")
+            print("   Final metrics:")
             for k, v in final_metrics.items():
                 print(f"      {k}: {v:.4f}")
             print(f"{'='*60}\n")
-            
+
         except KeyboardInterrupt:
             print("\n⚠️  Training interrupted by user")
             self.tracker.mark_failed(experiment.id, "Interrupted by user")
@@ -114,11 +115,11 @@ class TrainRunner:
             print(f"\n❌ Training failed: {e}")
             self.tracker.mark_failed(experiment.id, str(e))
             raise
-    
+
     def _print_info(self):
         """Print training info."""
         print(f"\n{'='*60}")
-        print(f"Training Configuration")
+        print("Training Configuration")
         print(f"{'='*60}")
         print(f"Model: {self.model_name}")
         print(f"  - Task: {self.model_info.task}")
@@ -126,7 +127,7 @@ class TrainRunner:
         print(f"\nDataset: {self.dataset_name}")
         print(f"  - Samples: {self.dataset_info.num_train} train / "
               f"{self.dataset_info.num_val} val / {self.dataset_info.num_test} test")
-        print(f"\nHyperparameters:")
+        print("\nHyperparameters:")
         print(f"  - Learning rate: {self.model_cfg.get('learning_rate')}")
         print(f"  - Batch size: {self.data_cfg.get('train_bs')}")
         print(f"  - Crop size: {self.data_cfg.get('crop_size')}")
@@ -136,19 +137,28 @@ class TrainRunner:
             print(f"  - Soft label: {self.model_cfg.get('soft_label_type')}")
             print(f"  - Use EMA: {self.model_cfg.get('use_ema')}")
         print(f"{'='*60}\n")
-    
+
     def _create_datamodule(self):
         """Create datamodule."""
         DataModuleClass = self.dataset_info.class_ref
+
+        # Build kwargs based on dataset
+        kwargs = {
+            'train_dir': self.data_cfg.get('train_dir', self.dataset_info.default_train_dir),
+            'val_dir': self.data_cfg.get('val_dir', self.dataset_info.default_val_dir),
+            'test_dir': self.data_cfg.get('test_dir', self.dataset_info.default_test_dir),
+            'crop_size': self.data_cfg.get('crop_size', self.dataset_info.default_crop_size),
+            'train_bs': self.data_cfg.get('train_bs', 8),
+        }
         
-        return DataModuleClass(
-            train_dir=self.data_cfg.get('train_dir', self.dataset_info.default_train_dir),
-            val_dir=self.data_cfg.get('val_dir', self.dataset_info.default_val_dir),
-            test_dir=self.data_cfg.get('test_dir', self.dataset_info.default_test_dir),
-            crop_size=self.data_cfg.get('crop_size', self.dataset_info.default_crop_size),
-            train_bs=self.data_cfg.get('train_bs', 8),
-        )
-    
+        # Add optional parameters if specified in config
+        if 'num_samples_per_image' in self.data_cfg:
+            kwargs['num_samples_per_image'] = self.data_cfg['num_samples_per_image']
+        if 'label_subdir' in self.data_cfg:
+            kwargs['label_subdir'] = self.data_cfg['label_subdir']
+
+        return DataModuleClass(**kwargs)
+
     def _create_model(self):
         """Create model."""
         common_args = {
@@ -160,7 +170,7 @@ class TrainRunner:
             'image_size': self.model_cfg.get('image_size', 224),
             'num_classes': self.model_cfg.get('num_classes', 2),
         }
-        
+
         if self.model_info.task == 'supervised':
             # SupervisedModel uses img_size instead of image_size
             supervised_args = common_args.copy()
@@ -168,6 +178,14 @@ class TrainRunner:
             supervised_args['in_channels'] = 1
             supervised_args['log_image_enabled'] = self.model_cfg.get('log_image_enabled', False)
             supervised_args['log_image_names'] = self.model_cfg.get('log_image_names', None)
+            
+            # Soft label support: enable if label_subdir is specified (not 'label')
+            label_subdir = self.data_cfg.get('label_subdir', 'label')
+            supervised_args['soft_label'] = (label_subdir != 'label')
+            
+            # Loss type: 'ce' (default) or 'bce'
+            supervised_args['loss_type'] = self.model_cfg.get('loss_type', 'ce')
+            
             return SupervisedModel(**supervised_args)
         else:  # diffusion
             return DiffusionModel(
@@ -185,7 +203,7 @@ class TrainRunner:
                 log_image_enabled=self.model_cfg.get('log_image_enabled', False),
                 log_image_names=self.model_cfg.get('log_image_names', None),
             )
-    
+
     def _create_callbacks(self, exp_dir: Path):
         """Create callbacks."""
         callbacks = [
@@ -199,16 +217,16 @@ class TrainRunner:
             ),
             LearningRateMonitor(logging_interval='epoch'),
         ]
-        
+
         if not self.debug:
             callbacks.append(
                 StochasticWeightAveraging(
                     swa_lrs=self.model_cfg.get('learning_rate', 1e-4) / 10
                 )
             )
-        
+
         return callbacks
-    
+
     def _create_logger(self, exp_dir: Path):
         """Create logger."""
         return EnhancedTensorBoardLogger(
@@ -216,16 +234,16 @@ class TrainRunner:
             name="tensorboard",
             version="",
         )
-    
+
     def _create_trainer(self, callbacks, logger):
         """Create trainer."""
         # Extract precision (handle both "32" and "32-true" formats)
         precision_str = str(self.trainer_cfg.get('precision', '32-true'))
-        
+
         # When using CUDA_VISIBLE_DEVICES, always use devices=1
         # This means "use 1 GPU" (which will be the one specified by CUDA_VISIBLE_DEVICES)
         devices = 1
-        
+
         return L.Trainer(
             max_epochs=self.trainer_cfg.get('max_epochs', 300),
             accelerator=self.trainer_cfg.get('accelerator', 'gpu'),

@@ -1,23 +1,22 @@
-import autorootcwd
 import matplotlib.pyplot as plt
-import numpy as np
+
 
 def visualize_dataset(loader, dataset_name='octa', num_samples=5):
     # 첫 번째 샘플로 어떤 키가 있는지 확인
     first_item = next(iter(loader))
     has_label_prob = "label_prob" in first_item
     has_label_sauna = "label_sauna" in first_item
-    
+
     # 컬럼 수 결정
     num_cols = 2  # image, label는 항상 있음
     if has_label_prob:
         num_cols += 1
     if has_label_sauna:
         num_cols += 1
-    
+
     fig_width = 3 * num_cols
     fig_height = 4 * num_samples
-    
+
     # num_samples가 1일 때와 그 이상일 때를 구분해서 처리
     if num_samples == 1:
         fig, axes = plt.subplots(1, num_cols, figsize=(fig_width, fig_height))
@@ -31,16 +30,16 @@ def visualize_dataset(loader, dataset_name='octa', num_samples=5):
 
         image = item["image"][0].squeeze(0)
         label = item["label"][0].squeeze(0)
-        
+
         # 값 범위 체크 및 출력
         print(f"Sample {i+1} - {item['name'][0]}:")
         print(f"  Image range: [{image.min():.3f}, {image.max():.3f}]")
         print(f"  Label range: [{label.min():.3f}, {label.max():.3f}]")
-        
+
         if has_label_prob:
             label_prob = item["label_prob"][0].squeeze(0)
             print(f"  Label_prob range: [{label_prob.min():.3f}, {label_prob.max():.3f}]")
-        
+
         if has_label_sauna:
             label_sauna = item["label_sauna"][0].squeeze(0)
             print(f"  Label_sauna range: [{label_sauna.min():.3f}, {label_sauna.max():.3f}]")
@@ -55,7 +54,7 @@ def visualize_dataset(loader, dataset_name='octa', num_samples=5):
             raise ValueError(f"Invalid image shape: {image.shape}")
 
         col_idx = 0
-        
+
         # 1. 이미지 표시
         im1 = axes[i, col_idx].imshow(image, cmap=cmap)
         axes[i, col_idx].set_title(f"Image {i+1}", fontsize=12, fontweight="bold")
