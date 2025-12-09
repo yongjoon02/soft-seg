@@ -7,15 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.registry import register_loss
 
-
-@register_loss(
-    name='soft_ce',
-    description='Cross entropy loss that supports soft labels',
-    supports_multiclass=True,
-    supports_soft_labels=True,
-)
 class SoftCrossEntropyLoss(nn.Module):
     """Cross entropy loss that supports soft labels.
     
@@ -49,12 +41,6 @@ class SoftCrossEntropyLoss(nn.Module):
         return loss.mean()
 
 
-@register_loss(
-    name='soft_bce',
-    description='Binary Cross Entropy loss for soft labels',
-    supports_multiclass=False,
-    supports_soft_labels=True,
-)
 class SoftBCELoss(nn.Module):
     """Binary Cross Entropy loss for soft labels.
     
@@ -87,12 +73,6 @@ class SoftBCELoss(nn.Module):
         return loss.mean()
 
 
-@register_loss(
-    name='dice',
-    description='Dice loss for segmentation',
-    supports_multiclass=True,
-    supports_soft_labels=True,
-)
 class DiceLoss(nn.Module):
     """Dice loss for segmentation."""
     def __init__(self, smooth: float = 1.0):
@@ -118,12 +98,6 @@ class DiceLoss(nn.Module):
         return 1.0 - dice.mean()
 
 
-@register_loss(
-    name='focal_dice',
-    description='Combined Focal + Dice loss',
-    supports_multiclass=True,
-    supports_soft_labels=True,
-)
 class FocalDiceLoss(nn.Module):
     """Combined Focal + Dice loss for segmentation."""
     def __init__(self, wf: float = 0.1, wd: float = 0.9, gamma: float = 2.0):
@@ -163,3 +137,33 @@ __all__ = [
     'DiceLoss',
     'FocalDiceLoss',
 ]
+
+
+# Register losses after class definitions (to avoid circular import)
+def _register_losses():
+    """Register built-in losses to registry. Called lazily."""
+    try:
+        from src.registry import LOSS_REGISTRY
+        
+        LOSS_REGISTRY.register(name='soft_ce', obj=SoftCrossEntropyLoss, metadata={
+            'description': 'Cross entropy loss that supports soft labels',
+            'supports_multiclass': True,
+            'supports_soft_labels': True,
+        })
+        LOSS_REGISTRY.register(name='soft_bce', obj=SoftBCELoss, metadata={
+            'description': 'Binary Cross Entropy loss for soft labels',
+            'supports_multiclass': False,
+            'supports_soft_labels': True,
+        })
+        LOSS_REGISTRY.register(name='dice', obj=DiceLoss, metadata={
+            'description': 'Dice loss for segmentation',
+            'supports_multiclass': True,
+            'supports_soft_labels': True,
+        })
+        LOSS_REGISTRY.register(name='focal_dice', obj=FocalDiceLoss, metadata={
+            'description': 'Combined Focal + Dice loss',
+            'supports_multiclass': True,
+            'supports_soft_labels': True,
+        })
+    except ImportError:
+        pass  # Registry not available yet
