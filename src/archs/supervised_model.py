@@ -3,11 +3,11 @@
 import lightning.pytorch as L
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from monai.inferers import SlidingWindowInferer
 from torchmetrics import MetricCollection
 
 from src.archs.components import CSNet, DSCNet
+from src.losses import SoftBCELoss, SoftCrossEntropyLoss
 from src.metrics import (
     Betti0Error,
     Betti1Error,
@@ -23,78 +23,6 @@ MODEL_REGISTRY = {
     'csnet': CSNet,
     'dscnet': DSCNet,
 }
-
-
-class SoftCrossEntropyLoss(nn.Module):
-    """Cross entropy loss that supports soft labels.
-    
-    For soft labels, converts them to 2-class distribution and computes
-    cross entropy with log_softmax.
-    
-    Args:
-        soft_label: Whether to use soft label mode (default: False)
-    """
-    def __init__(self, soft_label: bool = False):
-        super().__init__()
-        self.soft_label = soft_label
-        self.hard_ce = nn.CrossEntropyLoss()
-    
-    def forward(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            logits: (B, C, H, W) model output logits
-            labels: (B, H, W) soft labels in [0, 1] or hard labels (float due to augmentation)
-        """
-        if not self.soft_label:
-            # Hard label mode: threshold then convert to long
-            # (augmentation can cause interpolated values like 0.3, 0.7)
-            return self.hard_ce(logits, (labels > 0.5).long())
-        
-        # Soft label mode: convert soft label to 2-class distribution
-        # labels shape: (B, H, W) with values in [0, 1]
-        # target shape: (B, 2, H, W) - probability for each class
-        soft_target = torch.stack([1 - labels, labels], dim=1)  # (B, 2, H, W)
-        
-        # Compute soft cross entropy
-        log_probs = F.log_softmax(logits, dim=1)  # (B, C, H, W)
-        loss = -torch.sum(soft_target * log_probs, dim=1)  # (B, H, W)
-        return loss.mean()
-
-
-class SoftBCELoss(nn.Module):
-    """Binary Cross Entropy loss for soft labels.
-    
-    Converts 2-class logits to probability via softmax, then applies BCE.
-    More natural for soft labels than cross entropy.
-    
-    Args:
-        soft_label: Whether to use soft label mode (default: False)
-    """
-    def __init__(self, soft_label: bool = False):
-        super().__init__()
-        self.soft_label = soft_label
-        self.hard_ce = nn.CrossEntropyLoss()
-    
-    def forward(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            logits: (B, C, H, W) model output logits (C=2 for binary segmentation)
-            labels: (B, H, W) soft labels in [0, 1]
-        """
-        if not self.soft_label:
-            # Hard label mode: use standard cross entropy
-            return self.hard_ce(logits, (labels > 0.5).long())
-        
-        # Soft label mode: convert logits to probability and use BCE
-        # Get probability for foreground class (class 1)
-        probs = F.softmax(logits, dim=1)[:, 1]  # (B, H, W)
-        
-        # BCE loss with soft labels
-        # BCE = -[y * log(p) + (1-y) * log(1-p)]
-        eps = 1e-7
-        probs = torch.clamp(probs, eps, 1 - eps)
-        loss = -(labels * torch.log(probs) + (1 - labels) * torch.log(1 - probs))
-        return loss.mean()
 
 
 class ModelWrapper(nn.Module):

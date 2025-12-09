@@ -436,7 +436,7 @@ class FlowModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         images = batch['image']  # condition
-        geometry = batch['geometry']  # target
+        geometry = batch.get('geometry', batch.get('label'))  # target
         
         patch_size, num_patches = select_patch_params(self.hparams.patch_plan)
         
@@ -457,8 +457,8 @@ class FlowModel(L.LightningModule):
         # Compute loss
         loss = torch.abs(v - ut).mean()
         
-        # Log
-        self.log('train/loss', loss, prog_bar=True)
+        # Log (sync_dist for DDP)
+        self.log('train/loss', loss, prog_bar=True, sync_dist=True)
         
         return loss
 
@@ -504,7 +504,7 @@ class FlowModel(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         images = batch['image']  # condition
         labels = batch['label']
-        geometry = batch['geometry']  # target
+        geometry = batch.get('geometry', batch.get('label'))  # target
         sample_names = batch.get('name', [f'sample_{batch_idx}_{i}' for i in range(images.shape[0])])
         
         # Convert labels for metrics
@@ -528,7 +528,7 @@ class FlowModel(L.LightningModule):
         
         # Compute loss
         loss = torch.abs(output_geometry - geometry).mean()
-        self.log('val/loss', loss, prog_bar=True)
+        self.log('val/loss', loss, prog_bar=True, sync_dist=True)
         
         # Convert predictions to class indices
         if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
@@ -543,9 +543,9 @@ class FlowModel(L.LightningModule):
         general_metrics = self.val_metrics(preds, labels)
         vessel_metrics = self.vessel_metrics(preds, labels)
         
-        # Log
-        self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True)
-        self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False)
+        # Log (sync_dist for DDP)
+        self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True, sync_dist=True)
+        self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False, sync_dist=True)
         
         self._log_images(sample_names, images, labels, preds, tag_prefix='val')
         self._log_images(sample_names, images, geometry, output_geometry, tag_prefix='val_geometry')
@@ -590,9 +590,9 @@ class FlowModel(L.LightningModule):
         general_metrics = self.val_metrics(preds, labels)
         vessel_metrics = self.vessel_metrics(preds, labels)
         
-        # Log
-        self.log_dict({'test/' + k: v for k, v in general_metrics.items()})
-        self.log_dict({'test/' + k: v for k, v in vessel_metrics.items()})
+        # Log (sync_dist for DDP)
+        self.log_dict({'test/' + k: v for k, v in general_metrics.items()}, sync_dist=True)
+        self.log_dict({'test/' + k: v for k, v in vessel_metrics.items()}, sync_dist=True)
         
         self._log_images(sample_names, images, labels, preds, tag_prefix='test')
         

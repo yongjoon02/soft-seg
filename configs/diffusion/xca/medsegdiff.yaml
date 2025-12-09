@@ -1,10 +1,9 @@
-# MedSegDiff configuration for diffusion training
-
+# XCA 데이터셋 - MedSegDiff 학습 설정
 model:
   arch_name: medsegdiff
   image_size: 320
   dim: 64
-  timesteps: 50
+  timesteps: 100
   learning_rate: 0.0002
   weight_decay: 0.00001
   experiment_name: medsegdiff
@@ -14,9 +13,9 @@ model:
   ema_decay: 0.9999
   log_image_enabled: true
   log_image_names:
-    - '00036.png'
-    - '00050.png'
-    - '00063.png'
+    - '0000.png'
+    - '0010.png'
+    - '0019.png'
 
 data:
   name: xca
@@ -31,21 +30,8 @@ trainer:
   max_epochs: 500
   accelerator: gpu
   devices: 1
-  precision: 32-true
+  precision: 16-mixed
   enable_progress_bar: false
   check_val_every_n_epoch: 25
   accumulate_grad_batches: 2
   gradient_clip_val: 1.0
-  callbacks:
-    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
-      init_args:
-        monitor: val/dice
-        mode: max
-        save_last: true
-        verbose: true
-  logger:
-    class_path: lightning.pytorch.loggers.TensorBoardLogger
-    init_args:
-      save_dir: lightning_logs
-      name: xca_diffusion
-      version: medsegdiff

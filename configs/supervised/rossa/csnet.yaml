@@ -1,4 +1,4 @@
-# CSNet - OCTA500 3M Supervised Model Configuration
+# ROSSA 데이터셋 - CSNet 학습 설정
 model:
   arch_name: csnet
   in_channels: 1
@@ -6,8 +6,11 @@ model:
   image_size: 224
   learning_rate: 0.001
   weight_decay: 0.00001
-  # Image logging to TensorBoard
   log_image_enabled: true
+  log_image_names:
+    - '201.png'
+    - '205.png'
+    - '210.png'
 
 data:
   name: rossa
@@ -18,32 +21,12 @@ data:
   crop_size: 224
   train_bs: 32
   num_workers: 8
-  # Set to true to include SAM-annotated data (618 images)
-  use_sam: false
+  use_sam: false  # true: SAM-annotated 데이터 포함 (618 images)
 
 trainer:
   max_epochs: 300
   accelerator: gpu
   devices: 1
-  precision: 32-true
+  precision: 16-mixed
   log_every_n_steps: 50
   check_val_every_n_epoch: 5
-  accumulate_grad_batches: 1
-  gradient_clip_val: null
-  callbacks:
-    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
-      init_args:
-        monitor: val/dice
-        save_last: true
-        mode: max
-        verbose: true
-    - class_path: lightning.pytorch.callbacks.StochasticWeightAveraging
-      init_args:
-        swa_lrs: 0.0001
-
-  logger:
-    class_path: lightning.pytorch.loggers.TensorBoardLogger
-    init_args:
-      save_dir: lightning_logs
-      name: rossa
-      version: csnet

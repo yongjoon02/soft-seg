@@ -177,6 +177,9 @@ class EvalRunner:
             if model_info.task == 'supervised':
                 from src.archs.supervised_model import SupervisedModel
                 model = SupervisedModel.load_from_checkpoint(str(checkpoint_path))
+            elif model_info.name in ['dhariwal_concat_unet', 'dhariwal_unet_4channel']:
+                from src.archs.flow_model import FlowModel
+                model = FlowModel.load_from_checkpoint(str(checkpoint_path))
             else:  # diffusion
                 from src.archs.diffusion_model import DiffusionModel
                 model = DiffusionModel.load_from_checkpoint(str(checkpoint_path))

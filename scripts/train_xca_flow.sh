@@ -22,10 +22,10 @@ export CUDA_VISIBLE_DEVICES=${GPU}
 
 # Configuration
 CONFIG="configs/flow/xca/flow.yaml"
-LOG_DIR="scripts/logs"
-LOG_FILE="${LOG_DIR}/flow_model_train.log"
 
-# Create logs directory
+# 로그 디렉토리 및 파일 경로 (logs/로 변경)
+LOG_DIR="logs"
+LOG_FILE="${LOG_DIR}/flow_model_train.log"
 mkdir -p "${LOG_DIR}"
 
 echo "======================================"
@@ -39,7 +39,7 @@ echo "======================================"
 # Check if running in background mode
 if [[ "$1" == "--background" || "$1" == "-b" ]]; then
     echo "🚀 Starting Flow model training in background..."
-    nohup bash -c "source .venv/bin/activate && CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} uv run python scripts/train_flow_model.py --config ${CONFIG}" > "${LOG_FILE}" 2>&1 &
+    nohup bash -c "source .venv/bin/activate && CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} uv run python scripts/train.py --config ${CONFIG}" > "${LOG_FILE}" 2>&1 &
     PID=$!
     echo "   PID: ${PID}"
     echo ""
@@ -49,5 +49,5 @@ else
     echo "🚀 Starting Flow model training..."
     echo ""
     source .venv/bin/activate
-    CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} uv run python scripts/train_flow_model.py --config "${CONFIG}"
+    CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} uv run python scripts/train.py --config "${CONFIG}" | tee "${LOG_FILE}"
 fi

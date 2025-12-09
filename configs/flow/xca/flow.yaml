@@ -1,5 +1,4 @@
-# Flow matching configuration for simple conditional segmentation (image + noise -> geometry)
-
+# XCA 데이터셋 - Flow Matching 학습 설정
 model:
   arch_name: dhariwal_concat_unet
   image_size: 320
@@ -16,9 +15,9 @@ model:
   data_name: xca
   log_image_enabled: true
   log_image_names:
-    - '00036.png'
-    - '00050.png'
-    - '00063.png'
+    - '0000.png'
+    - '0010.png'
+    - '0019.png'
   # UNet architecture parameters
   model_channels: 32
   channel_mult: [1, 2, 4, 8]
@@ -30,7 +29,7 @@ model:
   augment_dim: 0
 
 data:
-  name: xca_flow
+  name: xca
   train_dir: data/xca_full/train
   val_dir: data/xca_full/val
   test_dir: data/xca_full/test
@@ -42,24 +41,8 @@ trainer:
   max_epochs: 500
   accelerator: gpu
   devices: 1
-  precision: 32-true
+  precision: 16-mixed
   enable_progress_bar: false
-  check_val_every_n_epoch: 150
+  check_val_every_n_epoch: 25
   accumulate_grad_batches: 4
   gradient_clip_val: 1.0
-  callbacks:
-    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
-      init_args:
-        monitor: val/dice
-        mode: max
-        save_last: true
-        verbose: true
-    - class_path: src.callbacks.ema_callback.EMAWeightAveraging
-      init_args:
-        decay: 0.999
-  logger:
-    class_path: lightning.pytorch.loggers.TensorBoardLogger
-    init_args:
-      save_dir: lightning_logs
-      name: xca_flow_model
-      version: flow_model

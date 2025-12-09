@@ -1,4 +1,4 @@
-# MedSegDiff - OCTA500 3M Diffusion Model Configuration
+# OCTA500 6M 데이터셋 - MedSegDiff 학습 설정
 model:
   arch_name: medsegdiff
   image_size: 224
@@ -30,22 +30,8 @@ trainer:
   max_epochs: 500
   accelerator: gpu
   devices: 1
-  precision: 32-true
+  precision: 32-true  # Diffusion은 FP32 필요
   enable_progress_bar: false
   check_val_every_n_epoch: 25
   accumulate_grad_batches: 2
   gradient_clip_val: 1.0
-  callbacks:
-    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
-      init_args:
-        monitor: val/dice
-        mode: max
-        save_last: true
-        verbose: true
-  logger:
-    class_path: lightning.pytorch.loggers.TensorBoardLogger
-    init_args:
-      save_dir: lightning_logs
-      name: octa500_6m
-      version: medsegdiff
-

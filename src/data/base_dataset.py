@@ -338,7 +338,7 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
-            num_workers=8,
+            num_workers=16,
             pin_memory=False,
             prefetch_factor=2
         )

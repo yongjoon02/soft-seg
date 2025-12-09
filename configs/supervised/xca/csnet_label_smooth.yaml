@@ -7,11 +7,12 @@ model:
   learning_rate: 0.0002
   weight_decay: 0.00001
   num_classes: 2
+  loss_type: bce
   log_image_enabled: true
   log_image_names:
-    - '00036.png'
-    - '00050.png'
-    - '00063.png'
+    - '0000.png'
+    - '0010.png'
+    - '0019.png'
 
 data:
   name: xca
@@ -21,28 +22,13 @@ data:
   crop_size: 320
   train_bs: 8
   num_samples_per_image: 8
-  label_subdir: label_smooth  # Label Smoothing soft label
+  label_subdir: label_smooth
 
 trainer:
   max_epochs: 400
   accelerator: gpu
   devices: 1
-  precision: 32-true
+  precision: 16-mixed
   log_every_n_steps: 10
   check_val_every_n_epoch: 20
-  accumulate_grad_batches: 1
   gradient_clip_val: 1.0
-  callbacks:
-    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
-      init_args:
-        monitor: val/dice
-        mode: max
-        save_last: true
-        verbose: true
-
-  logger:
-    class_path: lightning.pytorch.loggers.TensorBoardLogger
-    init_args:
-      save_dir: experiments/csnet/xca_smoothing
-      name: logs
-      version: ""

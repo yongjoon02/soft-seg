@@ -1,5 +1,6 @@
 """Training runner - config-based training logic."""
 
+import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -16,6 +17,16 @@ from src.archs.supervised_model import SupervisedModel
 from src.experiment import EnhancedTensorBoardLogger, ExperimentTracker
 from src.registry import get_dataset_info, get_model_info
 from src.utils.config import save_config
+
+# Import data modules to register datasets
+import src.data  # noqa: F401
+
+
+def is_main_process() -> bool:
+    """Check if current process is the main process (rank 0) in DDP."""
+    # Check Lightning's LOCAL_RANK
+    local_rank = os.environ.get('LOCAL_RANK', '0')
+    return local_rank == '0'
 
 
 class TrainRunner:
@@ -50,70 +61,88 @@ class TrainRunner:
         self.resume = config.get('resume', None)
         self.debug = config.get('debug', False)
 
-        # Create experiment tracker
-        self.tracker = ExperimentTracker()
+        # Create experiment tracker (only on main process)
+        self.tracker = ExperimentTracker() if is_main_process() else None
 
     def run(self):
         """Execute training."""
-        self._print_info()
+        # Only print info on main process
+        if is_main_process():
+            self._print_info()
 
-        # Create experiment
-        experiment = self.tracker.create_experiment(
-            model=self.model_name,
-            dataset=self.dataset_name,
-            config=self.config,
-            tag=self.tag,
-        )
+        # Create experiment only on main process
+        if is_main_process():
+            experiment = self.tracker.create_experiment(
+                model=self.model_name,
+                dataset=self.dataset_name,
+                config=self.config,
+                tag=self.tag,
+            )
+            self._experiment_id = experiment.id
+            self._experiment_dir = experiment.dir
 
-        print(f"\n{'='*60}")
-        print(f"Experiment ID: {experiment.id}")
-        print(f"Experiment dir: {experiment.dir}")
-        print(f"{'='*60}\n")
+            print(f"\n{'='*60}")
+            print(f"Experiment ID: {experiment.id}")
+            print(f"Experiment dir: {experiment.dir}")
+            print(f"{'='*60}\n")
 
-        # Save config to experiment dir
-        save_config(self.config, experiment.dir / "config.yaml")
+            # Save config to experiment dir
+            save_config(self.config, experiment.dir / "config.yaml")
+        else:
+            # Non-main processes wait and use a dummy dir
+            # In DDP, all processes need to have the same experiment dir for checkpoints
+            import time
+            time.sleep(2)  # Wait for main process to create experiment
+            # Use a temporary dir that won't be used
+            self._experiment_dir = Path("/tmp/ddp_worker")
+            self._experiment_dir.mkdir(parents=True, exist_ok=True)
+            self._experiment_id = None
 
         try:
             # Create components
             datamodule = self._create_datamodule()
             model = self._create_model()
-            callbacks = self._create_callbacks(experiment.dir)
-            logger = self._create_logger(experiment.dir)
+            callbacks = self._create_callbacks(self._experiment_dir)
+            logger = self._create_logger(self._experiment_dir) if is_main_process() else None
             trainer = self._create_trainer(callbacks, logger)
 
             # Train
-            print("Starting training...")
+            if is_main_process():
+                print("Starting training...")
             trainer.fit(model, datamodule, ckpt_path=self.resume)
 
-            # Finish experiment
-            final_metrics = {
-                k: v.item() if torch.is_tensor(v) else v
-                for k, v in trainer.callback_metrics.items()
-                if 'val/' in k
-            }
-            best_ckpt = experiment.dir / "checkpoints" / "best.ckpt"
+            # Finish experiment (only on main process)
+            if is_main_process():
+                final_metrics = {
+                    k: v.item() if torch.is_tensor(v) else v
+                    for k, v in trainer.callback_metrics.items()
+                    if 'val/' in k
+                }
+                best_ckpt = self._experiment_dir / "checkpoints" / "best.ckpt"
 
-            self.tracker.finish_experiment(
-                experiment.id,
-                final_metrics=final_metrics,
-                best_checkpoint=str(best_ckpt) if best_ckpt.exists() else None,
-            )
+                self.tracker.finish_experiment(
+                    self._experiment_id,
+                    final_metrics=final_metrics,
+                    best_checkpoint=str(best_ckpt) if best_ckpt.exists() else None,
+                )
 
-            print(f"\n{'='*60}")
-            print("✅ Training completed!")
-            print(f"   Best checkpoint: {best_ckpt}")
-            print("   Final metrics:")
-            for k, v in final_metrics.items():
-                print(f"      {k}: {v:.4f}")
-            print(f"{'='*60}\n")
+                print(f"\n{'='*60}")
+                print("✅ Training completed!")
+                print(f"   Best checkpoint: {best_ckpt}")
+                print("   Final metrics:")
+                for k, v in final_metrics.items():
+                    print(f"      {k}: {v:.4f}")
+                print(f"{'='*60}\n")
 
         except KeyboardInterrupt:
-            print("\n⚠️  Training interrupted by user")
-            self.tracker.mark_failed(experiment.id, "Interrupted by user")
+            if is_main_process():
+                print("\n⚠️  Training interrupted by user")
+                self.tracker.mark_failed(self._experiment_id, "Interrupted by user")
             raise
         except Exception as e:
-            print(f"\n❌ Training failed: {e}")
-            self.tracker.mark_failed(experiment.id, str(e))
+            if is_main_process():
+                print(f"\n❌ Training failed: {e}")
+                self.tracker.mark_failed(self._experiment_id, str(e))
             raise
 
     def _print_info(self):
@@ -171,7 +200,29 @@ class TrainRunner:
             'num_classes': self.model_cfg.get('num_classes', 2),
         }
 
-        if self.model_info.task == 'supervised':
+        # FlowModel 지원: arch_name이 flow 계열이면 FlowModel 사용
+        flow_archs = ['dhariwal_concat_unet', 'dhariwal_unet_4channel']
+        if self.model_name in flow_archs:
+            from src.archs.flow_model import FlowModel
+            return FlowModel(
+                **common_args,
+                patch_plan=self.model_cfg.get('patch_plan', None),
+                dim=self.model_cfg.get('dim', 32),
+                timesteps=self.model_cfg.get('timesteps', 15),
+                sigma=self.model_cfg.get('sigma', 0.25),
+                num_ensemble=self.model_cfg.get('num_ensemble', 1),
+                log_image_enabled=self.model_cfg.get('log_image_enabled', False),
+                log_image_names=self.model_cfg.get('log_image_names', None),
+                model_channels=self.model_cfg.get('model_channels', 32),
+                channel_mult=self.model_cfg.get('channel_mult', [1,2,4,8]),
+                channel_mult_emb=self.model_cfg.get('channel_mult_emb', 4),
+                num_blocks=self.model_cfg.get('num_blocks', 3),
+                attn_resolutions=self.model_cfg.get('attn_resolutions', [16,16,8,8]),
+                dropout=self.model_cfg.get('dropout', 0.0),
+                label_dim=self.model_cfg.get('label_dim', 0),
+                augment_dim=self.model_cfg.get('augment_dim', 0),
+            )
+        elif self.model_info.task == 'supervised':
             # SupervisedModel uses img_size instead of image_size
             supervised_args = common_args.copy()
             supervised_args['img_size'] = supervised_args.pop('image_size')
@@ -238,16 +289,26 @@ class TrainRunner:
     def _create_trainer(self, callbacks, logger):
         """Create trainer."""
         # Extract precision (handle both "32" and "32-true" formats)
-        precision_str = str(self.trainer_cfg.get('precision', '32-true'))
+        # Environment variable override for DDP script compatibility
+        precision_str = os.environ.get('DDP_PRECISION') or str(self.trainer_cfg.get('precision', '32-true'))
 
-        # When using CUDA_VISIBLE_DEVICES, always use devices=1
-        # This means "use 1 GPU" (which will be the one specified by CUDA_VISIBLE_DEVICES)
-        devices = 1
+        # GPU/Device configuration
+        # - devices: number of GPUs or list of GPU indices (default: 1)
+        # - strategy: 'auto', 'ddp', 'ddp_find_unused_parameters_true', etc.
+        # Environment variables override config for DDP script compatibility
+        devices_env = os.environ.get('DDP_DEVICES')
+        if devices_env:
+            devices = int(devices_env) if devices_env.lstrip('-').isdigit() else devices_env
+        else:
+            devices = self.trainer_cfg.get('devices', 1)
+        
+        strategy = os.environ.get('DDP_STRATEGY') or self.trainer_cfg.get('strategy', 'auto')
 
         return L.Trainer(
             max_epochs=self.trainer_cfg.get('max_epochs', 300),
             accelerator=self.trainer_cfg.get('accelerator', 'gpu'),
             devices=devices,
+            strategy=strategy,
             precision=precision_str,
             callbacks=callbacks,
             logger=logger,

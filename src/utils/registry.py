@@ -1,56 +1,32 @@
+"""Registry utilities - redirects to src.registry for backward compatibility.
 
-class Registry():
-    def __init__(self, name):
-        self._name = name
-        self._obj_map = {}
+Note: This file is kept for backward compatibility.
+      New code should import from src.registry directly.
 
-    def _do_register(self, name, obj, suffix=None):
-        if isinstance(suffix, str):
-            name = name + '_' + suffix # ex) UNet_model
+Usage (deprecated):
+    from src.utils.registry import ARCHS_REGISTRY, DATASET_REGISTRY
 
-        # Allow re-registration (for module reloading and direct script execution)
-        if name in self._obj_map:
-            pass  # Silently overwrite
+Usage (recommended):
+    from src.registry import ARCHS_REGISTRY, DATASET_REGISTRY
+"""
 
-        self._obj_map[name] = obj
-        # print(f"Registering {name} to {self._name} registry.")  # 로그 제거
+# Re-export everything from src.registry.base for backward compatibility
+from src.registry.base import (
+    Registry,
+    RegistryEntry,
+    DATASET_REGISTRY,
+    ARCHS_REGISTRY,
+    MODEL_REGISTRY,
+    LOSS_REGISTRY,
+    METRIC_REGISTRY,
+)
 
-    def register(self, name:str=None, obj=None, suffix=None):
-        if obj is None:
-            # used as a decorator
-            def deco(func_or_class):
-                register_name = name if name is not None else func_or_class.__name__
-                self._do_register(register_name, func_or_class, suffix)
-                return func_or_class
-            return deco
-
-        # used as a function call
-        if name is None:
-            name = obj.__name__
-        self._do_register(name, obj, suffix)
-
-    def get(self, name, suffix='basicsr'):
-        ret = self._obj_map.get(name)
-        if ret is None:
-            ret = self._obj_map.get(name + '_' + suffix)
-            print(f"Name {name} is not found, use name: {name}_{suffix}")
-        if ret is None:
-            raise KeyError(f"No object named {name} found in {self._name} registry.")
-        return ret
-
-
-    def __contains__(self, name):
-        return name in self._obj_map
-
-    def __iter__(self):
-        return iter(self._obj_map.items())
-
-    def keys(self):
-        return self._obj_map.keys()
-
-
-DATASET_REGISTRY = Registry('dataset')
-ARCHS_REGISTRY = Registry('archs')
-MODEL_REGISTRY = Registry('model')
-LOSS_REGISTRY = Registry('loss')
-METRIC_REGISTRY = Registry('metric')
+__all__ = [
+    'Registry',
+    'RegistryEntry',
+    'DATASET_REGISTRY',
+    'ARCHS_REGISTRY',
+    'MODEL_REGISTRY',
+    'LOSS_REGISTRY',
+    'METRIC_REGISTRY',
+]

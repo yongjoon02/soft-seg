@@ -1,0 +1,264 @@
+================================================================================
+                         학습 실행 가이드 (Training Guide)
+================================================================================
+
+목차:
+  1. 기본 학습 (단일 GPU)
+  2. DDP 분산 학습 (다중 GPU)
+  3. TensorBoard 모니터링
+  4. 학습 관리 (중단/재개/백그라운드)
+  5. Config 파일 구조
+  6. 트러블슈팅
+
+================================================================================
+1. 기본 학습 (단일 GPU)
+================================================================================
+
+# XCA Flow 모델 학습
+bash scripts/train_xca_flow.sh
+
+# 특정 GPU 지정
+bash scripts/train_xca_flow.sh --gpu 0
+bash scripts/train_xca_flow.sh --gpu 1
+
+# 백그라운드 실행
+bash scripts/train_xca_flow.sh --gpu 0 -b
+
+# 직접 실행 (config 파일 지정)
+source .venv/bin/activate
+CUDA_VISIBLE_DEVICES=0 uv run python scripts/train.py --config configs/flow/xca/flow.yaml
+
+
+================================================================================
+2. DDP 분산 학습 (다중 GPU)
+================================================================================
+
+[방법 1] 범용 DDP 스크립트 사용 (권장)
+----------------------------------------
+# 어떤 config 파일이든 DDP로 실행 가능
+
+# Flow 모델 - GPU 1,2,3,4,5,6 사용
+bash scripts/train_ddp.sh --config configs/flow/xca/flow.yaml --gpus "1,2,3,4,5,6"
+
+# 단축 옵션 사용
+bash scripts/train_ddp.sh -c configs/flow/xca/flow.yaml -g "1,2,3,4,5,6"
+
+# Supervised 모델
+bash scripts/train_ddp.sh -c configs/supervised/xca/csnet.yaml -g "0,1,2,3"
+
+# Diffusion 모델
+bash scripts/train_ddp.sh -c configs/diffusion/octa500_3m/medsegdiff.yaml -g "2,3,4,5"
+
+# 백그라운드 실행
+bash scripts/train_ddp.sh -c configs/flow/xca/flow.yaml -g "1,2,3,4" -b
+
+
+[방법 2] 전용 DDP Config 사용
+----------------------------------------
+# DDP 전용 config 파일이 있는 경우
+bash scripts/train_xca_flow_ddp.sh --gpus "1,2,3,4,5,6"
+
+
+[DDP 스크립트 옵션]
+----------------------------------------
+옵션              단축    설명                          기본값
+--config          -c      Config 파일 경로              (필수)
+--gpus            -g      GPU 인덱스 (예: "0,1,2,3")    전체
+--devices         -d      사용할 GPU 수 (-1=전체)       -1
+--strategy        -s      DDP 전략                      ddp
+--precision       -p      정밀도 (16-mixed, 32-true)    16-mixed
+--background      -b      백그라운드 실행               false
+--help            -h      도움말 표시
+
+
+[DDP Strategy 옵션]
+----------------------------------------
+ddp                          - 기본 DDP (권장)
+ddp_find_unused_parameters_true  - 일부 파라미터가 학습에 안쓰일 때
+ddp_spawn                    - 멀티프로세싱 spawn 방식
+fsdp                         - Fully Sharded Data Parallel (대규모 모델)
+
+
+================================================================================
+3. TensorBoard 모니터링
+================================================================================
+
+# TensorBoard 실행
+source .venv/bin/activate
+tensorboard --logdir=experiments --port=6006
+
+# 특정 실험만 보기
+tensorboard --logdir=experiments/dhariwal_concat_unet/xca --port=6006
+
+# 원격 접속 허용 (서버에서 실행 시)
+tensorboard --logdir=experiments --port=6006 --bind_all
+
+# 백그라운드 실행
+nohup tensorboard --logdir=experiments --port=6006 --bind_all > logs/tensorboard.log 2>&1 &
+
+# 브라우저에서 접속
+# 로컬: http://localhost:6006
+# 원격: http://<서버IP>:6006
+
+
+================================================================================
+4. 학습 관리 (중단/재개/백그라운드)
+================================================================================
+
+[학습 중단]
+----------------------------------------
+# 포그라운드 실행 중: Ctrl+C
+
+# 백그라운드 실행 중: PID로 종료
+ps aux | grep train.py
+kill <PID>
+
+
+[학습 재개 (Resume)]
+----------------------------------------
+# 마지막 체크포인트에서 재개
+uv run python scripts/train.py --config configs/flow/xca/flow.yaml \
+    --resume experiments/dhariwal_concat_unet/xca/<experiment_id>/checkpoints/last.ckpt
+
+
+[백그라운드 실행 모니터링]
+----------------------------------------
+# 로그 실시간 확인
+tail -f logs/flow_model_train.log
+
+# 프로세스 확인
+ps aux | grep train.py
+
+# GPU 사용량 확인
+watch -n 1 nvidia-smi
+
+
+================================================================================
+5. Config 파일 구조
+================================================================================
+
+[기본 구조]
+----------------------------------------
+configs/
+├── flow/                    # Flow Matching 모델
+│   └── xca/
+│       ├── flow.yaml        # 단일 GPU용
+│       └── flow_ddp.yaml    # DDP용 (선택적)
+├── supervised/              # Supervised 모델
+│   └── xca/
+│       └── csnet.yaml
+└── diffusion/               # Diffusion 모델
+    └── octa500_3m/
+        └── medsegdiff.yaml
+
+
+[Config 파일 예시]
+----------------------------------------
+model:
+  arch_name: dhariwal_concat_unet
+  image_size: 320
+  learning_rate: 0.0002
+  log_image_enabled: true      # 이미지 로깅 (TensorBoard)
+  log_image_names:
+    - '00036.png'
+    - '00050.png'
+
+data:
+  name: xca
+  train_dir: data/xca_full/train
+  train_bs: 4                  # 배치 크기
+  num_samples_per_image: 4     # 이미지당 크롭 수
+
+trainer:
+  max_epochs: 500
+  devices: 1                   # GPU 수 (DDP: -1 또는 숫자)
+  strategy: auto               # DDP: 'ddp'
+  precision: 32-true           # DDP: '16-mixed' 권장
+  check_val_every_n_epoch: 50  # Validation 주기
+  accumulate_grad_batches: 4   # Gradient Accumulation
+
+
+[메모리 최적화 설정]
+----------------------------------------
+# Effective Batch Size = train_bs × num_samples_per_image × num_gpus × accumulate_grad_batches
+
+# 예시: GPU 6개, 메모리 효율적 설정
+data:
+  train_bs: 2
+  num_samples_per_image: 4
+
+trainer:
+  devices: -1
+  precision: 16-mixed
+  accumulate_grad_batches: 4
+  # Effective: 2 × 4 × 6 × 4 = 192
+
+
+================================================================================
+6. 트러블슈팅
+================================================================================
+
+[CUDA Out of Memory]
+----------------------------------------
+원인: 배치 크기가 너무 큼
+해결:
+  1. train_bs 줄이기 (4 → 2)
+  2. num_samples_per_image 줄이기 (16 → 4)
+  3. precision: 16-mixed 사용
+  4. accumulate_grad_batches 늘리기
+
+환경변수 설정:
+  export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+
+[DDP에서 각 GPU가 별도 실험 생성]
+----------------------------------------
+원인: rank 0 외 프로세스도 experiment 생성
+해결: train_runner.py 최신 버전 사용 (이미 수정됨)
+
+
+[sync_dist 경고]
+----------------------------------------
+경고: It is recommended to use self.log(..., sync_dist=True)
+해결: flow_model.py에 sync_dist=True 추가됨 (이미 수정됨)
+
+
+[학습이 안 시작됨]
+----------------------------------------
+확인사항:
+  1. GPU 사용 가능 여부: nvidia-smi
+  2. 가상환경 활성화: source .venv/bin/activate
+  3. Config 파일 경로 확인
+  4. 데이터 디렉토리 존재 여부: ls data/xca_full/train
+
+
+[TensorBoard 접속 안됨]
+----------------------------------------
+확인사항:
+  1. TensorBoard 실행 중인지: ps aux | grep tensorboard
+  2. 포트 열려있는지: netstat -tlnp | grep 6006
+  3. 방화벽 확인 (서버): sudo ufw allow 6006
+
+
+================================================================================
+                              Quick Reference
+================================================================================
+
+# 단일 GPU 학습
+bash scripts/train_xca_flow.sh --gpu 0
+
+# 다중 GPU 학습 (DDP)
+bash scripts/train_ddp.sh -c configs/flow/xca/flow.yaml -g "1,2,3,4,5,6"
+
+# 백그라운드 + 로그 모니터링
+bash scripts/train_ddp.sh -c configs/flow/xca/flow.yaml -g "1,2,3,4" -b
+tail -f logs/flow_ddp_train.log
+
+# TensorBoard
+tensorboard --logdir=experiments --port=6006 --bind_all
+
+# GPU 모니터링
+watch -n 1 nvidia-smi
+
+================================================================================
+
