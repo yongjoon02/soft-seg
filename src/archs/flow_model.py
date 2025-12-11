@@ -92,6 +92,7 @@ class FlowCoordModel(L.LightningModule):
     def training_step(self, batch, batch_idx):
         images = batch['image']  # condition
         labels = batch['label']
+        # geometry: soft label/distance map 지원 (향후 확장용)
         geometry = batch['geometry']  # target
         
         patch_size, num_patches = select_patch_params(self.hparams.patch_plan)
@@ -138,7 +139,7 @@ class FlowCoordModel(L.LightningModule):
         traj = odeint(
             self.ode_func,
             input_4ch,
-            torch.linspace(0, 1, 15, device=input_4ch.device),
+            torch.linspace(0, 1, self.hparams.timesteps, device=input_4ch.device),
             atol=1e-4,
             rtol=1e-4,
             method="dopri5"
@@ -187,14 +188,14 @@ class FlowCoordModel(L.LightningModule):
             input_4ch = torch.cat([images, noise, coordx, coordy], dim=1)
             saved_steps, output_geometry = self.sample(input_4ch, return_intermediate=True)
         
-        # Compute loss
+        # Compute reconstruction loss (final generation quality)
         loss = torch.abs(output_geometry - geometry).mean()
-        self.log('val/loss', loss, prog_bar=True)
+        self.log('val/reconstruction_loss', loss, prog_bar=True)
         
         # Convert predictions to class indices
         if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
             output_geometry = output_geometry.squeeze(1)
-        preds = (output_geometry > 0.0).long()
+        preds = (output_geometry > 0.5).long()  # threshold=0.5 (geometry는 [0, 1] 범위)
         
         # Convert geometry for logging (ensure same dimensions as output_geometry)
         if geometry.dim() == 4 and geometry.shape[1] == 1:
@@ -208,8 +209,14 @@ class FlowCoordModel(L.LightningModule):
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False)
         
-        self._log_images(sample_names, images, labels, preds, tag_prefix='val')
-        self._log_images(sample_names, images, geometry, output_geometry, tag_prefix='val_geometry')
+        # Log images: include geometry if soft labels are used (geometry != labels)
+        # Check if geometry is different from labels (soft label case)
+        use_soft_label = not torch.equal(geometry, labels.float())
+        if use_soft_label:
+            self._log_images(sample_names, images, labels, preds, tag_prefix='val', 
+                           geometry=geometry, output_geometry=output_geometry)
+        else:
+            self._log_images(sample_names, images, labels, preds, tag_prefix='val')
         
         return general_metrics['dice']
 
@@ -249,7 +256,7 @@ class FlowCoordModel(L.LightningModule):
         # Convert predictions to class indices
         if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
             output_geometry = output_geometry.squeeze(1)
-        preds = (output_geometry > 0.0).long()
+        preds = (output_geometry > 0.5).long()  # threshold=0.5 (geometry는 [0, 1] 범위)
         
         # Compute metrics
         general_metrics = self.val_metrics(preds, labels)
@@ -307,8 +314,8 @@ class FlowCoordModel(L.LightningModule):
 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
-            mode='min',
-            patience=20,
+            mode='max',  # val/dice는 높을수록 좋음
+            patience=3,  # validation 주기(25 epoch)를 고려 = 75 epoch
             factor=0.5,
         )
 
@@ -316,28 +323,67 @@ class FlowCoordModel(L.LightningModule):
             'optimizer': optimizer,
             'lr_scheduler': {
                 'scheduler': scheduler,
-                'monitor': 'train/loss',
+                'monitor': 'val/dice',  # ✅ 올바른 metric
                 'interval': 'epoch',
+                'frequency': 25,  # validation 주기와 일치
             }
         }
 
 
 
-    def _log_images(self, sample_names, images, labels, preds, tag_prefix: str):
-        """Log images to TensorBoard similar to supervised model."""
-        if not self.log_image_enabled or not hasattr(self.logger, 'experiment'):
+    def _log_images(self, sample_names, images, labels, preds, tag_prefix: str, geometry=None, output_geometry=None):
+        """Log images to TensorBoard similar to supervised model.
+        
+        Args:
+            sample_names: List of sample names
+            images: Input images (B, C, H, W)
+            labels: Binary labels (B, H, W)
+            preds: Binary predictions (B, H, W)
+            tag_prefix: Prefix for TensorBoard tag
+            geometry: Optional soft label/geometry (B, H, W) - for soft label visualization
+            output_geometry: Optional output geometry (B, H, W) - for soft label visualization
+        """
+        # Check if logging is enabled
+        if not hasattr(self.hparams, 'log_image_enabled') or not self.hparams.log_image_enabled:
             return
+        
+        # DDP: only log on rank 0
+        if not hasattr(self, 'logger') or self.logger is None or not hasattr(self.logger, 'experiment'):
+            return
+        
+        log_names = getattr(self.hparams, 'log_image_names', None)
+        
         for i, name in enumerate(sample_names):
-            if not any(pattern in name for pattern in self.log_image_names):
-                continue
+            filename = name.split('/')[-1] if '/' in name else name
+            
+            # Only log if filename matches log_image_names (or log all if not specified)
+            if log_names is None or filename in log_names:
+                print(f"[DEBUG] Logging image: {filename} at epoch {self.current_epoch}")
+                
             img = (images[i] + 1) / 2
             pred = preds[i].float().unsqueeze(0)
             label = labels[i].float().unsqueeze(0)
+                
+                # Standard visualization: [image, label, pred]
             vis_row = torch.cat([img, label, pred], dim=-1)
-            image_tag = name.split('/')[-1]
+                
             self.logger.experiment.add_image(
-                tag=f'{tag_prefix}/{image_tag}',
+                    tag=f'{tag_prefix}/{filename}',
                 img_tensor=vis_row,
+                    global_step=self.global_step,
+                )
+                
+                # If geometry is provided (soft label), also log geometry comparison
+            if geometry is not None and output_geometry is not None:
+                    geom = geometry[i].float().unsqueeze(0)
+                    out_geom = output_geometry[i].float().unsqueeze(0)
+                    
+                    # Geometry visualization: [image, target_geometry, output_geometry]
+                    geom_vis_row = torch.cat([img, geom, out_geom], dim=-1)
+                    
+                    self.logger.experiment.add_image(
+                        tag=f'{tag_prefix}_geometry/{filename}',
+                        img_tensor=geom_vis_row,
                 global_step=self.global_step,
             )
 
@@ -436,6 +482,7 @@ class FlowModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         images = batch['image']  # condition
+        # geometry: soft label/distance map 지원 (XCA에서는 geometry 없으면 label 사용)
         geometry = batch.get('geometry', batch.get('label'))  # target
         
         patch_size, num_patches = select_patch_params(self.hparams.patch_plan)
@@ -485,7 +532,7 @@ class FlowModel(L.LightningModule):
         traj = odeint(
             self.ode_func,
             noise,
-            torch.linspace(0, 1, 15, device=noise.device),
+            torch.linspace(0, 1, self.hparams.timesteps, device=noise.device),
             atol=1e-4,
             rtol=1e-4,
             method="dopri5"
@@ -526,14 +573,14 @@ class FlowModel(L.LightningModule):
             noise = torch.randn_like(geometry)
             saved_steps, output_geometry = self.sample(noise, images, return_intermediate=True)
         
-        # Compute loss
+        # Compute reconstruction loss (final generation quality)
         loss = torch.abs(output_geometry - geometry).mean()
-        self.log('val/loss', loss, prog_bar=True, sync_dist=True)
+        self.log('val/reconstruction_loss', loss, prog_bar=True, sync_dist=True)
         
         # Convert predictions to class indices
         if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
             output_geometry = output_geometry.squeeze(1)
-        preds = (output_geometry > 0.0).long()
+        preds = (output_geometry > 0.5).long()  # threshold=0.5 (geometry는 [0, 1] 범위)
         
         # Convert geometry for logging (ensure same dimensions as output_geometry)
         if geometry.dim() == 4 and geometry.shape[1] == 1:
@@ -547,8 +594,14 @@ class FlowModel(L.LightningModule):
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True, sync_dist=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False, sync_dist=True)
         
-        self._log_images(sample_names, images, labels, preds, tag_prefix='val')
-        self._log_images(sample_names, images, geometry, output_geometry, tag_prefix='val_geometry')
+        # Log images: include geometry if soft labels are used (geometry != labels)
+        # Check if geometry is different from labels (soft label case)
+        use_soft_label = not torch.equal(geometry, labels.float())
+        if use_soft_label:
+            self._log_images(sample_names, images, labels, preds, tag_prefix='val', 
+                           geometry=geometry, output_geometry=output_geometry)
+        else:
+            self._log_images(sample_names, images, labels, preds, tag_prefix='val')
         
         return general_metrics['dice']
 
@@ -584,7 +637,7 @@ class FlowModel(L.LightningModule):
         # Convert predictions to class indices
         if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
             output_geometry = output_geometry.squeeze(1)
-        preds = (output_geometry > 0.0).long()
+        preds = (output_geometry > 0.5).long()  # threshold=0.5 (geometry는 [0, 1] 범위)
         
         # Compute metrics
         general_metrics = self.val_metrics(preds, labels)
@@ -647,8 +700,8 @@ class FlowModel(L.LightningModule):
 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
-            mode='min',
-            patience=20,
+            mode='max',  # val/dice는 높을수록 좋음
+            patience=3,  # validation 주기(25 epoch)를 고려 = 75 epoch
             factor=0.5,
         )
 
@@ -656,27 +709,53 @@ class FlowModel(L.LightningModule):
             'optimizer': optimizer,
             'lr_scheduler': {
                 'scheduler': scheduler,
-                'monitor': 'train/loss',
+                'monitor': 'val/dice',  # ✅ 올바른 metric
                 'interval': 'epoch',
+                'frequency': 25,  # validation 주기와 일치
             }
         }
 
 
 
     def _log_images(self, sample_names, images, labels, preds, tag_prefix: str):
-        """Log images to TensorBoard similar to supervised model."""
-        if not self.log_image_enabled or not hasattr(self.logger, 'experiment'):
+        """Log images to TensorBoard similar to supervised model.
+        
+        Args:
+            preds: Binary predictions (B, H, W) with values {0, 1} (long tensor)
+        """
+        # Check if logging is enabled
+        if not hasattr(self.hparams, 'log_image_enabled') or not self.hparams.log_image_enabled:
             return
+        
+        # DDP: only log on rank 0
+        if not hasattr(self, 'logger') or self.logger is None or not hasattr(self.logger, 'experiment'):
+            return
+        
+        log_names = getattr(self.hparams, 'log_image_names', None)
+        
         for i, name in enumerate(sample_names):
-            if not any(pattern in name for pattern in self.log_image_names):
-                continue
+            filename = name.split('/')[-1] if '/' in name else name
+            
+            # Only log if filename matches log_image_names (or log all if not specified)
+            if log_names is None or filename in log_names:
+                print(f"[DEBUG] Logging image: {filename} at epoch {self.current_epoch}")
+                
+                # Normalize image to [0, 1]
             img = (images[i] + 1) / 2
-            pred = preds[i].float().unsqueeze(0)
+                
+                # Ensure binary visualization: preds should be {0, 1}
+                # If preds is long, convert to float; if already float, binarize
+            if preds[i].dtype == torch.long:
+                pred = preds[i].float().unsqueeze(0)
+            else:
+                pred = preds[i].float().unsqueeze(0)
+                
             label = labels[i].float().unsqueeze(0)
+                
             vis_row = torch.cat([img, label, pred], dim=-1)
-            image_tag = name.split('/')[-1]
+                
             self.logger.experiment.add_image(
-                tag=f'{tag_prefix}/{image_tag}',
+                    tag=f'{tag_prefix}/{filename}',
                 img_tensor=vis_row,
                 global_step=self.global_step,
             )

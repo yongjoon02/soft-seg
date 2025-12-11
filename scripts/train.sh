@@ -32,6 +32,7 @@ RESUME=""
 DDP=false
 DDP_STRATEGY="ddp"
 DDP_PRECISION="16-mixed"
+LOG_SUFFIX=""  # 로그 파일명에 덧붙일 접미사 (예: _01, _02)
 
 # 모든 모델 목록
 ALL_MODELS=("csnet" "dscnet" "medsegdiff" "berdiff")
@@ -75,6 +76,10 @@ while [[ $# -gt 0 ]]; do
             DDP_PRECISION="$2"
             shift 2
             ;;
+        --log-suffix)
+            LOG_SUFFIX="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "Usage:"
             echo "  # 데이터셋 전체 학습 (4개 모델 병렬, 각각 단일 GPU)"
@@ -102,6 +107,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --ddp            Enable DDP mode"
             echo "  --strategy       DDP strategy (default: ddp)"
             echo "  --precision      DDP precision (default: 16-mixed)"
+            echo "  --log-suffix     Append to log filename (e.g., _01, _02)"
             echo ""
             echo "Examples:"
             echo "  bash scripts/train.sh -d xca --gpus '0,1,2,3'"
@@ -156,7 +162,7 @@ if ${DDP}; then
     NUM_GPUS=$(echo "${GPUS}" | tr ',' '\n' | wc -l)
     
     CONFIG_NAME=$(basename "${CONFIG%.*}")
-    LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_ddp_train.log"
+    LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_ddp_train${LOG_SUFFIX}.log"
     
     echo "============================================================"
     echo "DDP Training"
@@ -215,7 +221,7 @@ if [[ -n "$CONFIG" ]]; then
     fi
     
     CONFIG_NAME=$(basename "${CONFIG%.*}")
-    LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_train.log"
+    LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_train${LOG_SUFFIX}.log"
     
     echo "============================================================"
     echo "Single GPU Training"

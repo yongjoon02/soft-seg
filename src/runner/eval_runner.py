@@ -17,8 +17,8 @@ import pandas as pd
 
 from src.experiment.tracker import ExperimentTracker
 from src.loggers import PredictionLogger
-from src.registry.datasets import DATASET_REGISTRY
-from src.registry.models import MODEL_REGISTRY
+from src.registry.datasets import DATASET_REGISTRY, get_dataset_info
+from src.registry.models import MODEL_REGISTRY, get_model_info
 
 
 @dataclass
@@ -66,7 +66,7 @@ class EvalRunner:
         # Get dataset info
         if dataset not in DATASET_REGISTRY:
             raise ValueError(f"Unknown dataset: {dataset}")
-        self.dataset_info = DATASET_REGISTRY[dataset]
+        self.dataset_info = get_dataset_info(dataset)
 
         # Initialize tracker
         self.tracker = ExperimentTracker()
@@ -160,7 +160,7 @@ class EvalRunner:
             print(f"❌ Unknown model: {model_name}")
             return None
 
-        model_info = MODEL_REGISTRY[model_name]
+        model_info = get_model_info(model_name)
 
         # Find checkpoint (use provided path or auto-detect)
         if checkpoint_path is None:

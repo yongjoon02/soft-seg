@@ -33,9 +33,9 @@ data:
   train_dir: data/xca_full/train
   val_dir: data/xca_full/val
   test_dir: data/xca_full/test
-  train_bs: 4
+  train_bs: 6  # DDP: 각 GPU당 1 → 총 6 GPU × 1 = 6
   image_size: 320
-  num_samples_per_image: 16
+  num_samples_per_image: 4  # 메모리 최적화
 
 trainer:
   max_epochs: 500
@@ -44,5 +44,5 @@ trainer:
   precision: 16-mixed
   enable_progress_bar: false
   check_val_every_n_epoch: 25
-  accumulate_grad_batches: 4
+  accumulate_grad_batches: 8  # 실효 배치: 6 GPU × 1 × 8 = 48
   gradient_clip_val: 1.0

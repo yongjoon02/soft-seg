@@ -103,7 +103,7 @@ class TrainRunner:
             datamodule = self._create_datamodule()
             model = self._create_model()
             callbacks = self._create_callbacks(self._experiment_dir)
-            logger = self._create_logger(self._experiment_dir) if is_main_process() else None
+            logger = self._create_logger(self._experiment_dir, self._experiment_id) if is_main_process() else None
             trainer = self._create_trainer(callbacks, logger)
 
             # Train
@@ -278,12 +278,16 @@ class TrainRunner:
 
         return callbacks
 
-    def _create_logger(self, exp_dir: Path):
-        """Create logger."""
+    def _create_logger(self, exp_dir: Path, experiment_id: str = None):
+        """Create logger with descriptive name."""
+        # TensorBoardLogger structure: save_dir/name/version/
+        # We want: exp_dir/tensorboard/ (flat structure)
+        # So set name to "tensorboard" and version to empty string
+        # This creates: exp_dir/tensorboard/
         return EnhancedTensorBoardLogger(
             save_dir=exp_dir,
             name="tensorboard",
-            version="",
+            version="",  # Empty version to avoid nested directories
         )
 
     def _create_trainer(self, callbacks, logger):

@@ -121,15 +121,15 @@ def register_dataset(
     
     Example:
         @register_dataset(
-            name='xca',
-            modality='XCA',
-            resolution=(512, 512),
-            num_train=155,
-            num_val=20,
-            num_test=46,
+        name='xca',
+        modality='XCA',
+        resolution=(512, 512),
+        num_train=155,
+        num_val=20,
+        num_test=46,
             description='XCA vessel segmentation',
-            default_crop_size=320,
-            default_train_dir='data/xca_full/train',
+        default_crop_size=320,
+        default_train_dir='data/xca_full/train',
         )
         class XCA_DataModule(BaseDataModule):
             pass

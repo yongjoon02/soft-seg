@@ -51,12 +51,12 @@ def register_model(
     
     Example:
         @register_model(
-            name='csnet',
-            task='supervised',
-            params=8_400_196,
-            speed='fast',
+        name='csnet',
+        task='supervised',
+        params=8_400_196,
+        speed='fast',
             description='Channel & Spatial Attention Network',
-            default_lr=2e-3,
+        default_lr=2e-3,
         )
         class CSNet(nn.Module):
             pass

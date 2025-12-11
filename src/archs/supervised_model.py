@@ -1,5 +1,6 @@
 """Supervised learning model for OCT segmentation."""
 
+import warnings
 import lightning.pytorch as L
 import torch
 import torch.nn as nn
@@ -7,7 +8,7 @@ from monai.inferers import SlidingWindowInferer
 from torchmetrics import MetricCollection
 
 from src.archs.components import CSNet, DSCNet
-from src.losses import SoftBCELoss, SoftCrossEntropyLoss
+from src.losses import SoftBCELoss, SoftCrossEntropyLoss, TopoLoss, L1Loss, L2Loss
 from src.metrics import (
     Betti0Error,
     Betti1Error,
@@ -55,7 +56,13 @@ class SupervisedModel(L.LightningModule):
         log_image_enabled: bool = False,
         log_image_names: list = None,
         soft_label: bool = False,  # soft label 학습 모드
-        loss_type: str = 'ce',  # 'ce' for CrossEntropy, 'bce' for BCE
+        loss_type: str = 'ce',  # 'ce' / 'bce' / 'l1' / 'l2' / 'bce_l1' / 'bce_l2' / 'bce_topo'
+        l1_lambda: float = 0.2,  # Weight for L1 loss when using bce_l1
+        l2_lambda: float = 0.5,  # Weight for L2 loss when using bce_l2
+        topo_lambda: float = 0.1,
+        topo_size: int = 100,
+        topo_pers_thresh: float = 0.0,
+        topo_pers_thresh_perfect: float = 0.99,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -91,6 +98,47 @@ class SupervisedModel(L.LightningModule):
         # Loss function (soft label aware)
         if loss_type == 'bce':
             self.loss_fn = SoftBCELoss(soft_label=soft_label)
+        elif loss_type == 'l1':
+            self.loss_fn = L1Loss(soft_label=soft_label)
+        elif loss_type == 'l2':
+            self.loss_fn = L2Loss(soft_label=soft_label)
+        elif loss_type == 'bce_l1':
+            # BCE + L1 loss
+            self.loss_fn = nn.ModuleDict({
+                'bce': SoftBCELoss(soft_label=soft_label),
+                'l1': L1Loss(soft_label=soft_label),
+            })
+            self.l1_lambda = l1_lambda  # Store L1 weight
+        elif loss_type == 'bce_l2':
+            # BCE + L2 loss (both support soft labels)
+            self.loss_fn = nn.ModuleDict({
+                'bce': SoftBCELoss(soft_label=soft_label),
+                'l2': L2Loss(soft_label=soft_label),
+            })
+            self.l2_lambda = l2_lambda  # Store L2 weight
+        elif loss_type == 'bce_topo':
+            # BCE + Topology-aware loss
+            # NOTE: TopoLoss requires binary hard masks, not soft labels
+            # If soft_label=True, TopoLoss will be disabled to avoid conflict
+            if soft_label:
+                # Soft label mode: use BCE only (TopoLoss incompatible with soft labels)
+                warnings.warn(
+                    "TopoLoss is disabled when soft_label=True. "
+                    "Topology loss requires binary hard masks, not soft labels. "
+                    "Using BCE only."
+                )
+                self.loss_fn = SoftBCELoss(soft_label=soft_label)
+            else:
+                # Hard label mode: BCE + TopoLoss
+                self.loss_fn = nn.ModuleDict({
+                    'bce': SoftBCELoss(soft_label=False),
+                    'topo': TopoLoss(
+                        lambda_weight=topo_lambda,
+                        topo_size=topo_size,
+                        pers_thresh=topo_pers_thresh,
+                        pers_thresh_perfect=topo_pers_thresh_perfect,
+                    )
+                })
         else:  # default: 'ce'
             self.loss_fn = SoftCrossEntropyLoss(soft_label=soft_label)
 
@@ -141,9 +189,105 @@ class SupervisedModel(L.LightningModule):
 
         # Forward (ModelWrapper handles dict outputs)
         logits = self(images)
+        
+        # Check for NaN/Inf in logits with detailed info
+        nan_mask = torch.isnan(logits)
+        inf_mask = torch.isinf(logits)
+        if nan_mask.any() or inf_mask.any():
+            nan_count = nan_mask.sum().item()
+            inf_count = inf_mask.sum().item()
+            total_elements = logits.numel()
+            print(f"⚠️ WARNING: Logits contain NaN/Inf at step {batch_idx}")
+            print(f"   NaN: {nan_count}/{total_elements} ({100*nan_count/total_elements:.2f}%)")
+            print(f"   Inf: {inf_count}/{total_elements} ({100*inf_count/total_elements:.2f}%)")
+            print(f"   Logits stats: min={logits.min().item():.4f}, max={logits.max().item():.4f}, mean={logits.mean().item():.4f}")
+            
+            # Check if images have issues
+            if torch.isnan(images).any() or torch.isinf(images).any():
+                print(f"   ⚠️ Images also contain NaN/Inf!")
+            
+            # Replace NaN/Inf with zeros to prevent crash
+            logits = torch.where(nan_mask | inf_mask, 
+                                torch.zeros_like(logits), logits)
 
-        # Compute loss (SoftCrossEntropyLoss handles both modes)
-        loss = self.loss_fn(logits, labels)
+        # Compute loss
+        if isinstance(self.loss_fn, nn.ModuleDict):
+            bce_loss = self.loss_fn['bce'](logits, labels)
+            
+            # Check each loss individually
+            if torch.isnan(bce_loss) or torch.isinf(bce_loss):
+                print(f"⚠️ WARNING: BCE loss is NaN/Inf at step {batch_idx}: {bce_loss}")
+                bce_loss = torch.tensor(0.0, device=bce_loss.device, dtype=bce_loss.dtype, requires_grad=True)
+            
+            # Handle different loss combinations
+            if 'topo' in self.loss_fn:
+                # BCE + TopoLoss
+                topo_loss = self.loss_fn['topo'](logits, labels)
+                
+                if torch.isnan(topo_loss) or torch.isinf(topo_loss):
+                    print(f"⚠️ WARNING: TopoLoss is NaN/Inf at step {batch_idx}: {topo_loss}")
+                    topo_loss = torch.tensor(0.0, device=topo_loss.device, dtype=topo_loss.dtype, requires_grad=True)
+                
+                # Normalize TopoLoss by BCE loss scale for better balance
+                if bce_loss.item() > 0:
+                    topo_loss_normalized = topo_loss / (bce_loss.item() + 1e-8) * bce_loss
+                else:
+                    topo_loss_normalized = topo_loss
+                
+                loss = bce_loss + topo_loss_normalized
+                
+                # Log individual losses
+                self.log('train/bce_loss', bce_loss, prog_bar=False)
+                self.log('train/topo_loss', topo_loss, prog_bar=False)
+                self.log('train/topo_loss_normalized', topo_loss_normalized, prog_bar=False)
+            
+            elif 'l2' in self.loss_fn:
+                # BCE + L2 loss
+                l2_loss = self.loss_fn['l2'](logits, labels)
+                
+                if torch.isnan(l2_loss) or torch.isinf(l2_loss):
+                    print(f"⚠️ WARNING: L2 loss is NaN/Inf at step {batch_idx}: {l2_loss}")
+                    l2_loss = torch.tensor(0.0, device=l2_loss.device, dtype=l2_loss.dtype, requires_grad=True)
+                
+                # Combine BCE and L2 with weight
+                loss = bce_loss + self.l2_lambda * l2_loss
+                
+                # Log individual losses
+                self.log('train/bce_loss', bce_loss, prog_bar=False)
+                self.log('train/l2_loss', l2_loss, prog_bar=False)
+            
+            elif 'l1' in self.loss_fn:
+                # BCE + L1 loss
+                l1_loss = self.loss_fn['l1'](logits, labels)
+                
+                if torch.isnan(l1_loss) or torch.isinf(l1_loss):
+                    print(f"⚠️ WARNING: L1 loss is NaN/Inf at step {batch_idx}: {l1_loss}")
+                    l1_loss = torch.tensor(0.0, device=l1_loss.device, dtype=l1_loss.dtype, requires_grad=True)
+                
+                # Combine BCE and L1 with weight
+                loss = bce_loss + self.l1_lambda * l1_loss
+                
+                # Log individual losses
+                self.log('train/bce_loss', bce_loss, prog_bar=False)
+                self.log('train/l1_loss', l1_loss, prog_bar=False)
+            
+            else:
+                # Fallback: just use BCE
+                loss = bce_loss
+                self.log('train/bce_loss', bce_loss, prog_bar=False)
+        else:
+            loss = self.loss_fn(logits, labels)
+            
+            # Check final loss
+            if torch.isnan(loss) or torch.isinf(loss):
+                print(f"⚠️ WARNING: Total loss is NaN/Inf at step {batch_idx}: {loss}")
+                loss = torch.tensor(0.0, device=loss.device, dtype=loss.dtype, requires_grad=True)
+
+        # Final check before logging
+        if torch.isnan(loss) or torch.isinf(loss):
+            print(f"❌ ERROR: Loss is still NaN/Inf after fixes at step {batch_idx}")
+            # Return a small dummy loss to prevent training crash
+            loss = torch.tensor(1e-6, device=loss.device, dtype=loss.dtype, requires_grad=True)
 
         # Log
         self.log('train/loss', loss, prog_bar=True)
@@ -152,26 +296,37 @@ class SupervisedModel(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         images, labels = batch['image'], batch['label']
+        
+        # Get geometry if available (soft label case)
+        geometry = batch.get('geometry', None)
+        if geometry is not None and geometry.dim() == 4:
+            geometry = geometry.squeeze(1)
 
         # Convert soft/binary labels to class indices (threshold for soft labels)
         if labels.dim() == 4:
             labels = labels.squeeze(1)
-        labels = (labels > 0.5).long()
+        labels_binary = (labels > 0.5).long()
 
         # Sliding window inference (ModelWrapper handles dict outputs)
         logits = self.inferer(images, self.model)
 
-        # Compute loss
-        loss = self.loss_fn(logits, labels)
+        # Compute loss (validation에서는 TopoLoss 제외: DDP 안전 및 속도)
+        if isinstance(self.loss_fn, nn.ModuleDict):
+            loss = self.loss_fn['bce'](logits, labels_binary)
+        else:
+            loss = self.loss_fn(logits, labels_binary)
 
         # Compute metrics
         preds = torch.argmax(logits, dim=1)
+        
+        # Get output geometry (softmax probability for foreground class)
+        output_geometry = torch.softmax(logits, dim=1)[:, 1, :, :]  # (B, H, W)
 
         # General metrics
-        general_metrics = self.val_metrics(preds, labels)
+        general_metrics = self.val_metrics(preds, labels_binary)
 
         # Vessel-specific metrics
-        vessel_metrics = self.vessel_metrics(preds, labels)
+        vessel_metrics = self.vessel_metrics(preds, labels_binary)
 
         # Log
         self.log('val/loss', loss, prog_bar=True)
@@ -182,7 +337,7 @@ class SupervisedModel(L.LightningModule):
         if hasattr(self.hparams, 'log_image_enabled') and self.hparams.log_image_enabled:
             log_names = getattr(self.hparams, 'log_image_names', None)
             pred_binary = (preds > 0).float()
-            label_binary = (labels > 0).float()
+            label_binary = (labels_binary > 0).float()
 
             for i in range(images.shape[0]):
                 sample_name = batch['name'][i] if 'name' in batch else f'sample_{i}'
@@ -191,17 +346,49 @@ class SupervisedModel(L.LightningModule):
                 # Only log if filename matches log_image_names (or log all if not specified)
                 if log_names is None or filename in log_names:
                     print(f"[DEBUG] Logging image: {filename} at epoch {self.current_epoch}")
-                    # Log to TensorBoard
+                    
+                    # Normalize image for visualization
+                    img = (images[i] + 1) / 2 if images[i].min() < 0 else images[i]
+                    if img.dim() == 2:
+                        img = img.unsqueeze(0)
+                    
+                    # Standard visualization: [image, label, pred]
+                    vis_row = torch.cat([img, label_binary[i:i+1], pred_binary[i:i+1]], dim=-1)
                     self.logger.experiment.add_image(
-                        f'val/{filename}/prediction',
-                        pred_binary[i:i+1],
+                        f'val/{filename}',
+                        vis_row,
                         self.global_step
                     )
-                    self.logger.experiment.add_image(
-                        f'val/{filename}/ground_truth',
-                        label_binary[i:i+1],
-                        self.global_step
-                    )
+                    
+                    # If geometry is provided (soft label), also log geometry comparison
+                    if geometry is not None and output_geometry is not None:
+                        geom = geometry[i].float().unsqueeze(0)
+                        out_geom = output_geometry[i].float().unsqueeze(0)
+                        
+                        # Debug: Check if geometry is actually soft label
+                        # Note: After cropping, some crops might appear binary if they only contain
+                        # background or foreground regions. This is normal and not a problem.
+                        geom_min, geom_max = geom.min().item(), geom.max().item()
+                        geom_unique = torch.unique(geom).numel()
+                        if geom_unique <= 2 and geom_min in [0.0, 1.0] and geom_max in [0.0, 1.0]:
+                            # This can happen if the crop only contains background or foreground
+                            # It's not necessarily a problem - just a small crop region
+                            pass  # Don't warn - this is expected for some crops
+                        else:
+                            # Only log if it's actually a soft label (to reduce log spam)
+                            if not hasattr(self, '_geometry_logged') or filename not in getattr(self, '_geometry_logged', set()):
+                                print(f"✅ geometry for {filename} is soft label (unique values: {geom_unique}, range: [{geom_min:.3f}, {geom_max:.3f}])")
+                                if not hasattr(self, '_geometry_logged'):
+                                    self._geometry_logged = set()
+                                self._geometry_logged.add(filename)
+                        
+                        # Geometry visualization: [image, target_geometry, output_geometry]
+                        geom_vis_row = torch.cat([img, geom, out_geom], dim=-1)
+                        self.logger.experiment.add_image(
+                            f'val_geometry/{filename}',
+                            geom_vis_row,
+                            self.global_step
+                        )
 
         return loss
 

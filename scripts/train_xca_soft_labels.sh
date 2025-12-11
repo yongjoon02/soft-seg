@@ -124,22 +124,22 @@ if [[ $NUM_GPUS -ge 3 ]]; then
     
     echo "[1/3] Training ${MODEL} with SAUNA on GPU $GPU_SAUNA..."
     CUDA_VISIBLE_DEVICES=$GPU_SAUNA uv run python scripts/train.py --config "$CONFIG_SAUNA" &
-    PID_SAUNA=$!
-    
+PID_SAUNA=$!
+
     echo "[2/3] Training ${MODEL} with Gaussian on GPU $GPU_GAUSSIAN..."
     CUDA_VISIBLE_DEVICES=$GPU_GAUSSIAN uv run python scripts/train.py --config "$CONFIG_GAUSSIAN" &
-    PID_GAUSSIAN=$!
-    
+PID_GAUSSIAN=$!
+
     echo "[3/3] Training ${MODEL} with Smooth on GPU $GPU_SMOOTH..."
     CUDA_VISIBLE_DEVICES=$GPU_SMOOTH uv run python scripts/train.py --config "$CONFIG_SMOOTH" &
-    PID_SMOOTH=$!
-    
-    echo ""
+PID_SMOOTH=$!
+
+echo ""
     echo "All jobs started in parallel:"
-    echo "  SAUNA:    PID=$PID_SAUNA (GPU $GPU_SAUNA)"
-    echo "  Gaussian: PID=$PID_GAUSSIAN (GPU $GPU_GAUSSIAN)"
-    echo "  Smooth:   PID=$PID_SMOOTH (GPU $GPU_SMOOTH)"
-    echo ""
+echo "  SAUNA:    PID=$PID_SAUNA (GPU $GPU_SAUNA)"
+echo "  Gaussian: PID=$PID_GAUSSIAN (GPU $GPU_GAUSSIAN)"
+echo "  Smooth:   PID=$PID_SMOOTH (GPU $GPU_SMOOTH)"
+echo ""
     
     wait $PID_SAUNA && echo "✅ SAUNA completed"
     wait $PID_GAUSSIAN && echo "✅ Gaussian completed"

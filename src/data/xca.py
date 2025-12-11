@@ -118,6 +118,28 @@ class XCADataset(BaseOCTDataset):
                 ),
             ])
 
+    def to_geometry(self, label: torch.Tensor) -> torch.Tensor:
+        """
+        Convert binary label to geometry (soft label) for flow matching.
+        
+        향후 확장 포인트: distance map, soft boundary 등 다양한 변환 구현 가능
+        현재는 단순히 label을 float로 변환 (identity transform)
+        
+        Args:
+            label: Binary label tensor (C, H, W) with values in {0, 1}
+            
+        Returns:
+            geometry: Soft label tensor (C, H, W) with values in [0, 1]
+        
+        Examples of possible transformations:
+            - Distance transform: cv2.distanceTransform()
+            - Gaussian blur: gaussian_filter()
+            - Boundary softening: apply soft boundary weights
+        """
+        # 현재: identity transform (binary label을 그대로 사용)
+        # 향후: distance map이나 soft boundary로 변환 가능
+        return label.float()
+    
     def __getitem__(self, index):
         """
         Get a sample with X-ray specific post-processing.
@@ -126,7 +148,12 @@ class XCADataset(BaseOCTDataset):
             index: Sample index
             
         Returns:
-            dict: Dictionary containing image, label, and metadata
+            dict: Dictionary containing:
+                - image: Input image (C, H, W) normalized to [-1, 1]
+                - label: Binary label (C, H, W) for metrics calculation
+                - geometry: Soft label (C, H, W) for flow matching training
+                - name: Sample filename
+                - coordinate: Coordinate tensor (for FlowCoordModel)
         """
         # Base class의 __getitem__ 호출
         data = super().__getitem__(index)
@@ -139,6 +166,25 @@ class XCADataset(BaseOCTDataset):
         if self.label_subdir != 'label' and self.label_subdir in data:
             data['label'] = data[self.label_subdir]
             # 원본 키도 유지 (디버깅용)
+
+        # Flow matching을 위한 geometry 생성
+        # - label: binary (0/1) - metrics 계산용
+        # - geometry: soft label - flow matching 학습용
+        if 'label' in data:
+            data['geometry'] = self.to_geometry(data['label'])
+            
+            # Debug: Check if geometry is actually soft label (only log first sample to avoid spam)
+            if self.label_subdir != 'label' and not hasattr(self, '_geometry_check_logged'):
+                geom = data['geometry']
+                geom_min, geom_max = geom.min().item(), geom.max().item()
+                geom_unique = torch.unique(geom).numel()
+                if geom_unique <= 2 and geom_min in [0.0, 1.0] and geom_max in [0.0, 1.0]:
+                    print(f"⚠️ WARNING: label_subdir='{self.label_subdir}' but geometry appears binary "
+                          f"(unique: {geom_unique}, range: [{geom_min:.3f}, {geom_max:.3f}])")
+                else:
+                    print(f"✅ label_subdir='{self.label_subdir}': geometry is soft label "
+                          f"(unique: {geom_unique}, range: [{geom_min:.3f}, {geom_max:.3f}])")
+                self._geometry_check_logged = True
 
         return data
 

@@ -34,6 +34,8 @@ dependencies = [
  "pytest>=9.0.0",
  "pytest-cov>=7.0.0",
  "torchdiffeq>=0.2.5",
+ "gudhi>=3.11.0",
+ "topolosses>=0.2.0",
 ]
 
 [[tool.uv.index]]

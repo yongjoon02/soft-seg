@@ -338,9 +338,10 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
-            num_workers=16,
-            pin_memory=False,
-            prefetch_factor=2
+            num_workers=16,  # Optimized for single GPU (too many workers can cause overhead)
+            pin_memory=True,  # Enable for faster GPU transfer
+            prefetch_factor=4,  # Prefetch more batches for better pipeline
+            persistent_workers=True,  # Keep workers alive between epochs
         )
 
     def train_dataloader(self):
@@ -348,7 +349,13 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
         return self._create_dataloader(self.train_dataset, self.train_bs, shuffle=True)
 
     def val_dataloader(self):
-        """Return validation DataLoader (not shuffled)"""
+        """Return validation DataLoader (not shuffled)
+        
+        Note: DDP 사용 시 validation 데이터가 GPU별로 분할되면,
+        rank 0가 처리하지 않은 이미지는 로깅되지 않습니다.
+        따라서 distributed_sampler를 사용하지 않도록 설정합니다.
+        (Lightning의 replace_sampler_ddp=False 옵션 사용)
+        """
         return self._create_dataloader(self.val_dataset, 1, shuffle=False)
 
     def test_dataloader(self):
