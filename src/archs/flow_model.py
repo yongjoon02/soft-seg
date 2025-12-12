@@ -416,6 +416,11 @@ class FlowModel(L.LightningModule):
         dropout: float = 0.0,
         label_dim: int = 0,
         augment_dim: int = 0,
+        # Loss configuration
+        loss_type: str = 'l1',  # 'l1', 'l1_bce', 'l1_l2', 'l1_bce_l2', 'l1_bce_dice'
+        bce_weight: float = 0.5,
+        l2_weight: float = 0.1,
+        dice_weight: float = 0.2,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -479,6 +484,17 @@ class FlowModel(L.LightningModule):
         
         self.log_image_enabled = log_image_enabled
         self.log_image_names = log_image_names if log_image_names is not None else ['00036.png']
+        
+        # Loss configuration
+        self.loss_type = loss_type
+        self.bce_weight = bce_weight
+        self.l2_weight = l2_weight
+        self.dice_weight = dice_weight
+        
+        # Initialize loss functions if needed
+        if 'dice' in loss_type:
+            from src.losses import DiceLoss
+            self.dice_loss = DiceLoss()
 
     def training_step(self, batch, batch_idx):
         images = batch['image']  # condition
@@ -501,13 +517,117 @@ class FlowModel(L.LightningModule):
         # UNet forward: (x=xt, time=t, cond=images)
         v = self.unet(xt, t, images)
         
-        # Compute loss
-        loss = torch.abs(v - ut).mean()
+        # Compute loss based on loss_type
+        loss = self._compute_loss(v, ut, xt, geometry, t)
         
         # Log (sync_dist for DDP)
         self.log('train/loss', loss, prog_bar=True, sync_dist=True)
         
         return loss
+    
+    def _compute_loss(self, v, ut, xt, geometry, t):
+        """Compute loss based on loss_type configuration."""
+        losses = {}
+        
+        # L1 loss (always included, base flow matching loss)
+        l1_loss = torch.abs(v - ut).mean()
+        losses['l1'] = l1_loss
+        
+        # Additional losses based on loss_type
+        if self.loss_type == 'l1':
+            # Default: only L1 loss (existing behavior)
+            total_loss = l1_loss
+        
+        elif self.loss_type == 'l1_bce':
+            # L1 + BCE (recommended for SAUNA soft labels)
+            # Compute output geometry from xt for BCE loss
+            # Approximate output: xt at t=1 should be close to geometry
+            # Use xt as proxy for output geometry (or compute from flow)
+            output_geometry = xt  # Simplified: use current state as proxy
+            if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
+                output_geometry = output_geometry.squeeze(1)
+            if geometry.dim() == 4 and geometry.shape[1] == 1:
+                geometry_2d = geometry.squeeze(1)
+            else:
+                geometry_2d = geometry
+            
+            # Convert to [0, 1] range if needed (SAUNA is already in [0, 1])
+            output_probs = torch.clamp(output_geometry, 0.0, 1.0)
+            target_probs = torch.clamp(geometry_2d, 0.0, 1.0)
+            
+            # BCE loss on probabilities
+            eps = 1e-7
+            output_probs = torch.clamp(output_probs, eps, 1 - eps)
+            bce_loss = -(target_probs * torch.log(output_probs) + 
+                        (1 - target_probs) * torch.log(1 - output_probs)).mean()
+            losses['bce'] = bce_loss
+            
+            total_loss = l1_loss + self.bce_weight * bce_loss
+        
+        elif self.loss_type == 'l1_l2':
+            # L1 + L2 (smoothness)
+            l2_loss = ((v - ut) ** 2).mean()
+            losses['l2'] = l2_loss
+            total_loss = l1_loss + self.l2_weight * l2_loss
+        
+        elif self.loss_type == 'l1_bce_l2':
+            # L1 + BCE + L2
+            output_geometry = xt
+            if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
+                output_geometry = output_geometry.squeeze(1)
+            if geometry.dim() == 4 and geometry.shape[1] == 1:
+                geometry_2d = geometry.squeeze(1)
+            else:
+                geometry_2d = geometry
+            
+            output_probs = torch.clamp(output_geometry, 0.0, 1.0)
+            target_probs = torch.clamp(geometry_2d, 0.0, 1.0)
+            
+            eps = 1e-7
+            output_probs = torch.clamp(output_probs, eps, 1 - eps)
+            bce_loss = -(target_probs * torch.log(output_probs) + 
+                        (1 - target_probs) * torch.log(1 - output_probs)).mean()
+            l2_loss = ((v - ut) ** 2).mean()
+            
+            losses['bce'] = bce_loss
+            losses['l2'] = l2_loss
+            total_loss = l1_loss + self.bce_weight * bce_loss + self.l2_weight * l2_loss
+        
+        elif self.loss_type == 'l1_bce_dice':
+            # L1 + BCE + Dice
+            output_geometry = xt
+            if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
+                output_geometry = output_geometry.squeeze(1)
+            if geometry.dim() == 4 and geometry.shape[1] == 1:
+                geometry_2d = geometry.squeeze(1)
+            else:
+                geometry_2d = geometry
+            
+            output_probs = torch.clamp(output_geometry, 0.0, 1.0)
+            target_probs = torch.clamp(geometry_2d, 0.0, 1.0)
+            
+            # BCE loss
+            eps = 1e-7
+            output_probs_clamped = torch.clamp(output_probs, eps, 1 - eps)
+            bce_loss = -(target_probs * torch.log(output_probs_clamped) + 
+                        (1 - target_probs) * torch.log(1 - output_probs_clamped)).mean()
+            
+            # Dice loss
+            dice_loss = self.dice_loss(output_probs.unsqueeze(1), target_probs)
+            
+            losses['bce'] = bce_loss
+            losses['dice'] = dice_loss
+            total_loss = l1_loss + self.bce_weight * bce_loss + self.dice_weight * dice_loss
+        
+        else:
+            # Unknown loss_type, fallback to L1
+            total_loss = l1_loss
+        
+        # Log individual losses
+        for loss_name, loss_value in losses.items():
+            self.log(f'train/{loss_name}_loss', loss_value, prog_bar=False, sync_dist=True)
+        
+        return total_loss
 
     def sample(self, noise, images, return_intermediate: bool = False, save_steps: list = None):
         """Sample from flow matching model (inference).

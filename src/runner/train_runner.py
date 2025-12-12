@@ -223,6 +223,11 @@ class TrainRunner:
                 dropout=self.model_cfg.get('dropout', 0.0),
                 label_dim=self.model_cfg.get('label_dim', 0),
                 augment_dim=self.model_cfg.get('augment_dim', 0),
+                # Loss configuration
+                loss_type=self.model_cfg.get('loss_type', 'l1'),
+                bce_weight=self.model_cfg.get('bce_weight', 0.5),
+                l2_weight=self.model_cfg.get('l2_weight', 0.1),
+                dice_weight=self.model_cfg.get('dice_weight', 0.2),
             )
         elif self.model_info.task == 'supervised':
             # SupervisedModel uses img_size instead of image_size

@@ -1,4 +1,4 @@
-# XCA 데이터셋 - Flow Matching 학습 설정
+# XCA 데이터셋 - Flow Matching 학습 설정 (SAUNA soft label)
 model:
   arch_name: dhariwal_concat_unet
   image_size: 320
@@ -11,7 +11,7 @@ model:
   learning_rate: 0.0002
   weight_decay: 0.00001
   num_classes: 2
-  experiment_name: flow_model
+  experiment_name: flow_model_sauna
   data_name: xca
   log_image_enabled: true
   log_image_names:
@@ -27,11 +27,11 @@ model:
   dropout: 0.0
   label_dim: 0
   augment_dim: 0
-  # Loss configuration (optional, defaults to 'l1' for backward compatibility)
-  loss_type: l1_bce  # Options: 'l1', 'l1_bce', 'l1_l2', 'l1_bce_l2', 'l1_bce_dice'
-  bce_weight: 0.5    # Weight for BCE loss (used when loss_type includes 'bce')
-  l2_weight: 0.1     # Weight for L2 loss (used when loss_type includes 'l2')
-  dice_weight: 0.2   # Weight for Dice loss (used when loss_type includes 'dice')
+  # Loss configuration for SAUNA soft labels
+  loss_type: l1_bce  # Recommended: L1 + BCE for SAUNA soft labels
+  bce_weight: 0.5    # Weight for BCE loss (SAUNA soft label optimization)
+  l2_weight: 0.1     # Weight for L2 loss (optional, for smoothness)
+  dice_weight: 0.2   # Weight for Dice loss (optional, for segmentation quality)
 
 data:
   name: xca
@@ -41,6 +41,7 @@ data:
   train_bs: 6  # DDP: 각 GPU당 1 → 총 6 GPU × 1 = 6
   image_size: 320
   num_samples_per_image: 4  # 메모리 최적화
+  use_sauna_transform: true  # Enable SAUNA dynamic transformation
 
 trainer:
   max_epochs: 500
@@ -51,3 +52,4 @@ trainer:
   check_val_every_n_epoch: 25
   accumulate_grad_batches: 8  # 실효 배치: 6 GPU × 1 × 8 = 48
   gradient_clip_val: 1.0
+
