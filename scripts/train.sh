@@ -31,7 +31,7 @@ GPUS=""
 RESUME=""
 DDP=false
 DDP_STRATEGY="ddp"
-DDP_PRECISION="16-mixed"
+DDP_PRECISION="32-true"  # Default to FP32 for stability (can override with --precision)
 LOG_SUFFIX=""  # 로그 파일명에 덧붙일 접미사 (예: _01, _02)
 
 # 모든 모델 목록
@@ -162,7 +162,7 @@ if ${DDP}; then
     NUM_GPUS=$(echo "${GPUS}" | tr ',' '\n' | wc -l)
     
     CONFIG_NAME=$(basename "${CONFIG%.*}")
-    LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_ddp_train${LOG_SUFFIX}.log"
+    TEMP_LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_ddp_train${LOG_SUFFIX}.log"
     
     echo "============================================================"
     echo "DDP Training"
@@ -171,7 +171,7 @@ if ${DDP}; then
     echo "GPUs:      ${GPUS} (${NUM_GPUS} devices)"
     echo "Strategy:  ${DDP_STRATEGY}"
     echo "Precision: ${DDP_PRECISION}"
-    echo "Log:       ${LOG_FILE}"
+    echo "Log:       ${TEMP_LOG_FILE} (will be renamed with experiment_id)"
     if [[ -n "$RESUME" ]]; then
         echo "Resume:    ${RESUME}"
     fi
@@ -184,7 +184,7 @@ if ${DDP}; then
     TRAIN_CMD="python scripts/train.py --config ${CONFIG} ${RESUME_ARG}"
     
     echo "🚀 Starting DDP training..."
-    echo "   Monitor: tail -f ${LOG_FILE}"
+    echo "   Monitor: tail -f ${TEMP_LOG_FILE}"
     echo ""
     
     nohup bash -c "source .venv/bin/activate && \
@@ -192,16 +192,33 @@ if ${DDP}; then
         DDP_DEVICES=-1 \
         DDP_STRATEGY=${DDP_STRATEGY} \
         DDP_PRECISION=${DDP_PRECISION} \
-        uv run ${TRAIN_CMD}" > "${LOG_FILE}" 2>&1 &
+        uv run ${TRAIN_CMD}" > "${TEMP_LOG_FILE}" 2>&1 &
     
     PID=$!
+    
+    # Wait for experiment_id to appear in log, then rename file
+    (
+        sleep 5  # Wait for training to start
+        for i in {1..30}; do
+            if [[ -f "${TEMP_LOG_FILE}" ]]; then
+                EXP_ID=$(grep -m 1 "Experiment ID:" "${TEMP_LOG_FILE}" 2>/dev/null | sed 's/.*Experiment ID: //' | tr -d '[:space:]')
+                if [[ -n "$EXP_ID" ]]; then
+                    FINAL_LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_${EXP_ID}_ddp_train.log"
+                    mv "${TEMP_LOG_FILE}" "${FINAL_LOG_FILE}" 2>/dev/null && echo "📝 Log renamed to: ${FINAL_LOG_FILE}" || true
+                    break
+                fi
+            fi
+            sleep 1
+        done
+    ) &
     echo "   PID: ${PID}"
     echo ""
     echo "============================================================"
     echo "✅ Training started in background!"
     echo "============================================================"
     echo ""
-    echo "Monitor:  tail -f ${LOG_FILE}"
+    echo "Monitor:  tail -f ${TEMP_LOG_FILE}"
+    echo "         (Log will be renamed with experiment_id shortly)"
     echo "Stop:     kill ${PID}"
     exit 0
 fi
@@ -221,14 +238,14 @@ if [[ -n "$CONFIG" ]]; then
     fi
     
     CONFIG_NAME=$(basename "${CONFIG%.*}")
-    LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_train${LOG_SUFFIX}.log"
+    TEMP_LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_train${LOG_SUFFIX}.log"
     
     echo "============================================================"
     echo "Single GPU Training"
     echo "============================================================"
     echo "Config: ${CONFIG}"
     echo "GPU:    ${GPU}"
-    echo "Log:    ${LOG_FILE}"
+    echo "Log:    ${TEMP_LOG_FILE} (will be renamed with experiment_id)"
     if [[ -n "$RESUME" ]]; then
         echo "Resume: ${RESUME}"
     fi
@@ -238,19 +255,37 @@ if [[ -n "$CONFIG" ]]; then
     TRAIN_CMD="python scripts/train.py --config ${CONFIG} ${RESUME_ARG}"
     
     echo "🚀 Starting training..."
-    echo "   Monitor: tail -f ${LOG_FILE}"
+    echo "   Monitor: tail -f ${TEMP_LOG_FILE}"
     echo ""
     
-    nohup bash -c "CUDA_VISIBLE_DEVICES=${GPU} uv run ${TRAIN_CMD}" > "${LOG_FILE}" 2>&1 &
+    nohup bash -c "CUDA_VISIBLE_DEVICES=${GPU} uv run ${TRAIN_CMD}" > "${TEMP_LOG_FILE}" 2>&1 &
     
     PID=$!
+    
+    # Wait for experiment_id to appear in log, then rename file
+    (
+        sleep 5  # Wait for training to start
+        for i in {1..30}; do
+            if [[ -f "${TEMP_LOG_FILE}" ]]; then
+                EXP_ID=$(grep -m 1 "Experiment ID:" "${TEMP_LOG_FILE}" 2>/dev/null | sed 's/.*Experiment ID: //' | tr -d '[:space:]')
+                if [[ -n "$EXP_ID" ]]; then
+                    FINAL_LOG_FILE="${LOG_DIR}/${CONFIG_NAME}_${EXP_ID}_train.log"
+                    mv "${TEMP_LOG_FILE}" "${FINAL_LOG_FILE}" 2>/dev/null && echo "📝 Log renamed to: ${FINAL_LOG_FILE}" || true
+                    break
+                fi
+            fi
+            sleep 1
+        done
+    ) &
+    
     echo "   PID: ${PID}"
     echo ""
     echo "============================================================"
     echo "✅ Training started in background!"
     echo "============================================================"
     echo ""
-    echo "Monitor:  tail -f ${LOG_FILE}"
+    echo "Monitor:  tail -f ${TEMP_LOG_FILE}"
+    echo "         (Log will be renamed with experiment_id shortly)"
     echo "Stop:     kill ${PID}"
     exit 0
 fi
@@ -334,14 +369,30 @@ for i in "${!MODEL_ARRAY[@]}"; do
         continue
     fi
     
-    LOG_FILE="${LOG_DIR}/${DATA}_${MODEL}_train.log"
+    TEMP_LOG_FILE="${LOG_DIR}/${DATA}_${MODEL}_train.log"
     
     echo "🚀 [${MODEL}] Starting on GPU ${GPU}..."
     echo "   Config: ${CONFIG}"
-    echo "   Log: ${LOG_FILE}"
+    echo "   Log: ${TEMP_LOG_FILE} (will be renamed with experiment_id)"
     
-    nohup bash -c "CUDA_VISIBLE_DEVICES=${GPU} uv run python scripts/train.py --config ${CONFIG}" > "${LOG_FILE}" 2>&1 &
+    nohup bash -c "CUDA_VISIBLE_DEVICES=${GPU} uv run python scripts/train.py --config ${CONFIG}" > "${TEMP_LOG_FILE}" 2>&1 &
     PIDS+=($!)
+    
+    # Wait for experiment_id to appear in log, then rename file
+    (
+        sleep 5  # Wait for training to start
+        for i in {1..30}; do
+            if [[ -f "${TEMP_LOG_FILE}" ]]; then
+                EXP_ID=$(grep -m 1 "Experiment ID:" "${TEMP_LOG_FILE}" 2>/dev/null | sed 's/.*Experiment ID: //' | tr -d '[:space:]')
+                if [[ -n "$EXP_ID" ]]; then
+                    FINAL_LOG_FILE="${LOG_DIR}/${DATA}_${MODEL}_${EXP_ID}_train.log"
+                    mv "${TEMP_LOG_FILE}" "${FINAL_LOG_FILE}" 2>/dev/null && echo "📝 [${MODEL}] Log renamed to: ${FINAL_LOG_FILE}" || true
+                    break
+                fi
+            fi
+            sleep 1
+        done
+    ) &
     
     sleep 2
 done

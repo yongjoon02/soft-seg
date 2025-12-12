@@ -14,6 +14,7 @@ from typing import Dict, List, Optional
 
 import lightning as L
 import pandas as pd
+import yaml
 
 from src.experiment.tracker import ExperimentTracker
 from src.loggers import PredictionLogger
@@ -100,8 +101,13 @@ class EvalRunner:
 
         return None
 
-    def get_data_module(self):
-        """Create data module for current dataset."""
+    def get_data_module(self, label_subdir: Optional[str] = None):
+        """Create data module for current dataset.
+        
+        Args:
+            label_subdir: Label subdirectory (e.g., 'label_sauna'). 
+                         If None, uses default 'label'.
+        """
         from src.data.octa500 import OCTA500_3M_DataModule, OCTA500_6M_DataModule
         from src.data.rossa import ROSSA_DataModule
         from src.data.xca import XCA_DataModule
@@ -140,6 +146,7 @@ class EvalRunner:
                 test_dir=info.default_test_dir,
                 crop_size=info.default_crop_size,
                 train_bs=1,
+                label_subdir=label_subdir or 'label',  # Use provided label_subdir or default
             )
         else:
             raise ValueError(f"Unknown dataset: {self.dataset}")
@@ -184,14 +191,26 @@ class EvalRunner:
                 from src.archs.diffusion_model import DiffusionModel
                 model = DiffusionModel.load_from_checkpoint(str(checkpoint_path))
 
-            # Setup data
-            data_module = self.get_data_module()
+            # Extract label_subdir from checkpoint config if available
+            label_subdir = None
+            config_path = checkpoint_path.parent.parent / "config.yaml"
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    config = yaml.safe_load(f)
+                    label_subdir = config.get('data', {}).get('label_subdir', None)
+
+            # Setup data (use label_subdir from config if available)
+            data_module = self.get_data_module(label_subdir=label_subdir)
             data_module.setup("test")
+
+            # Extract experiment ID from checkpoint path (before creating logger)
+            exp_id = checkpoint_path.parent.parent.name
 
             # Create logger if saving predictions
             logger = None
             if self.save_predictions:
-                pred_dir = self.output_dir / model_name / "predictions"
+                # Include experiment_id in prediction path to avoid overwriting
+                pred_dir = self.output_dir / model_name / exp_id / "predictions"
                 logger = PredictionLogger(
                     save_dir=str(pred_dir.parent),
                     name="predictions",
@@ -212,9 +231,6 @@ class EvalRunner:
 
             if results and len(results) > 0:
                 metrics = results[0]
-
-                # Extract experiment ID from checkpoint path
-                exp_id = checkpoint_path.parent.parent.name
 
                 print(f"✅ {model_name}: Dice={metrics.get('test/dice', 0):.4f}, "
                       f"IoU={metrics.get('test/iou', 0):.4f}")
@@ -265,7 +281,8 @@ class EvalRunner:
     def save_results(
         self,
         results: List[EvaluationResult],
-        filename: Optional[str] = None
+        filename: Optional[str] = None,
+        append: bool = False
     ) -> Path:
         """
         Save evaluation results to CSV.
@@ -273,6 +290,7 @@ class EvalRunner:
         Args:
             results: List of evaluation results
             filename: Output filename (default: evaluation_{dataset}.csv)
+            append: If True, append to existing file instead of overwriting
             
         Returns:
             Path to saved CSV file
@@ -302,12 +320,26 @@ class EvalRunner:
                       if col not in ['Model', 'Dataset', 'Experiment_ID']]
         df = df[['Model', 'Dataset'] + metric_cols + ['Experiment_ID']]
 
-        # Save to CSV
+        # Determine filename
         if filename is None:
-            filename = f"evaluation_{self.dataset}.csv"
+            # If single result, include experiment_id in filename
+            if len(results) == 1:
+                exp_id = results[0].experiment_id
+                model_name = results[0].model
+                filename = f"evaluation_{model_name}_{exp_id}_{self.dataset}.csv"
+            else:
+                filename = f"evaluation_{self.dataset}.csv"
 
         output_path = self.output_dir / filename
-        df.to_csv(output_path, index=False, float_format='%.6f')
+        
+        # Append or overwrite
+        if append and output_path.exists():
+            existing_df = pd.read_csv(output_path)
+            df = pd.concat([existing_df, df], ignore_index=True)
+            df.to_csv(output_path, index=False, float_format='%.6f')
+            print(f"📝 Appended results to existing file: {output_path}")
+        else:
+            df.to_csv(output_path, index=False, float_format='%.6f')
 
         # Print results
         print(f"\n{'='*80}")

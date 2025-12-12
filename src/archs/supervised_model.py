@@ -178,14 +178,25 @@ class SupervisedModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         images, labels = batch['image'], batch['label']
+        
+        # Get geometry if available (soft label case)
+        geometry = batch.get('geometry', None)
 
         # Squeeze channel dimension if present
         if labels.dim() == 4:
             labels = labels.squeeze(1)  # (B, 1, H, W) -> (B, H, W)
+        if geometry is not None and geometry.dim() == 4:
+            geometry = geometry.squeeze(1)
         
-        # For hard label mode, convert to long; soft label mode keeps float
-        if not self.soft_label:
-            labels = labels.long()
+        # Choose training target based on soft_label mode
+        if self.soft_label and geometry is not None:
+            # Soft label 학습: geometry (soft label) 사용
+            train_labels = geometry
+        else:
+            # Hard label 학습: labels 사용
+            train_labels = labels
+            if not self.soft_label:
+                train_labels = train_labels.long()
 
         # Forward (ModelWrapper handles dict outputs)
         logits = self(images)
@@ -212,7 +223,7 @@ class SupervisedModel(L.LightningModule):
 
         # Compute loss
         if isinstance(self.loss_fn, nn.ModuleDict):
-            bce_loss = self.loss_fn['bce'](logits, labels)
+            bce_loss = self.loss_fn['bce'](logits, train_labels)
             
             # Check each loss individually
             if torch.isnan(bce_loss) or torch.isinf(bce_loss):
@@ -222,7 +233,7 @@ class SupervisedModel(L.LightningModule):
             # Handle different loss combinations
             if 'topo' in self.loss_fn:
                 # BCE + TopoLoss
-                topo_loss = self.loss_fn['topo'](logits, labels)
+                topo_loss = self.loss_fn['topo'](logits, train_labels)
                 
                 if torch.isnan(topo_loss) or torch.isinf(topo_loss):
                     print(f"⚠️ WARNING: TopoLoss is NaN/Inf at step {batch_idx}: {topo_loss}")
@@ -243,7 +254,7 @@ class SupervisedModel(L.LightningModule):
             
             elif 'l2' in self.loss_fn:
                 # BCE + L2 loss
-                l2_loss = self.loss_fn['l2'](logits, labels)
+                l2_loss = self.loss_fn['l2'](logits, train_labels)
                 
                 if torch.isnan(l2_loss) or torch.isinf(l2_loss):
                     print(f"⚠️ WARNING: L2 loss is NaN/Inf at step {batch_idx}: {l2_loss}")
@@ -258,7 +269,7 @@ class SupervisedModel(L.LightningModule):
             
             elif 'l1' in self.loss_fn:
                 # BCE + L1 loss
-                l1_loss = self.loss_fn['l1'](logits, labels)
+                l1_loss = self.loss_fn['l1'](logits, train_labels)
                 
                 if torch.isnan(l1_loss) or torch.isinf(l1_loss):
                     print(f"⚠️ WARNING: L1 loss is NaN/Inf at step {batch_idx}: {l1_loss}")
@@ -276,7 +287,7 @@ class SupervisedModel(L.LightningModule):
                 loss = bce_loss
                 self.log('train/bce_loss', bce_loss, prog_bar=False)
         else:
-            loss = self.loss_fn(logits, labels)
+            loss = self.loss_fn(logits, train_labels)
             
             # Check final loss
             if torch.isnan(loss) or torch.isinf(loss):
@@ -311,10 +322,23 @@ class SupervisedModel(L.LightningModule):
         logits = self.inferer(images, self.model)
 
         # Compute loss (validation에서는 TopoLoss 제외: DDP 안전 및 속도)
-        if isinstance(self.loss_fn, nn.ModuleDict):
-            loss = self.loss_fn['bce'](logits, labels_binary)
+        # Loss 계산 방식:
+        # - Training: soft label과 비교 (학습 목표와 일치)
+        # - Validation: soft label과 비교 (일관성) 또는 hard label과 비교 (최종 성능 예측)
+        # 여기서는 학습 목표와 일치하도록 soft label 사용
+        # Metrics는 항상 hard label로 계산 (표준 평가 방법)
+        if self.soft_label and geometry is not None:
+            # Soft label 학습 시: geometry (soft label)과 비교
+            loss_labels = geometry
         else:
-            loss = self.loss_fn(logits, labels_binary)
+            # Hard label 학습 시: labels와 비교
+            loss_labels = labels
+        
+        # Compute loss (validation에서는 BCE만 사용: 속도 및 안정성)
+        if isinstance(self.loss_fn, nn.ModuleDict):
+            loss = self.loss_fn['bce'](logits, loss_labels)
+        else:
+            loss = self.loss_fn(logits, loss_labels)
 
         # Compute metrics
         preds = torch.argmax(logits, dim=1)

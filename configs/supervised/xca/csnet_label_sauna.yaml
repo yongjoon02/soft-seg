@@ -4,12 +4,12 @@ tag: sauna
 model:
   arch_name: csnet
   in_channels: 1
-  learning_rate: 0.0002  # Slightly increased for larger batch size (linear scaling: 0.0001 * 192/128)
+  learning_rate: 0.0002
   weight_decay: 0.00001
   num_classes: 2
   soft_label: true
   loss_type: bce_l1
-  l2_lambda: 0.1
+  l1_lambda: 0.2
   log_image_enabled: true
   log_image_names:
     - '0000.png'
@@ -22,7 +22,7 @@ data:
   val_dir: data/xca_full/val
   test_dir: data/xca_full/test
   crop_size: 320
-  train_bs: 32  # Increased batch size for better GPU utilization (adjust based on GPU memory)
+  train_bs: 8  # Match Smooth/Gaussian for fair comparison
   num_samples_per_image: 8
   label_subdir: label_sauna
 
@@ -30,8 +30,7 @@ trainer:
   max_epochs: 400
   accelerator: gpu
   devices: 1
-  precision: 32-true  # Keep FP32 for stability (16-mixed causes NaN with TopoLoss)
+  precision: 16-mixed  # Match Smooth/Gaussian for fair comparison
   log_every_n_steps: 10
   check_val_every_n_epoch: 20
-  gradient_clip_val: 0.5  # Stronger gradient clipping
-  accumulate_grad_batches: 1  # No gradient accumulation needed with larger batch
+  gradient_clip_val: 1.0

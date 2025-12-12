@@ -9,6 +9,7 @@ from typing import Optional
 import torch
 from monai.transforms import (
     Compose,
+    Lambda,
     RandAdjustContrastd,
     RandRotated,
     ScaleIntensityd,
@@ -68,8 +69,25 @@ class XCADataset(BaseOCTDataset):
         def normalize_soft_label(d):
             """Normalize soft label by dividing by 255 (preserve actual values)."""
             result = {**d}
-            # Soft label은 0-255 범위를 0-1로 변환 (min-max가 아닌 단순 나누기)
-            result[label_key] = d[label_key] / 255.0
+            if label_key in d:
+                label_data = d[label_key]
+                # Tensor 또는 numpy array 모두 처리
+                if isinstance(label_data, torch.Tensor):
+                    # 이미 tensor인 경우 (EnsureChannelFirstd 이후)
+                    # 최대값이 1보다 크면 255로 나누기 (uint8 범위)
+                    if label_data.max() > 1.0:
+                        result[label_key] = label_data.float() / 255.0
+                    else:
+                        # 이미 정규화된 경우 그대로 사용
+                        result[label_key] = label_data.float()
+                else:
+                    # numpy array인 경우
+                    import numpy as np
+                    label_data = np.asarray(label_data)
+                    if label_data.max() > 1.0:
+                        result[label_key] = torch.from_numpy(label_data).float() / 255.0
+                    else:
+                        result[label_key] = torch.from_numpy(label_data).float()
             return result
 
         # Default transforms에 RGB→Gray 추가
@@ -91,6 +109,8 @@ class XCADataset(BaseOCTDataset):
         from monai.transforms import RandCropByPosNegLabeld, RandFlipd, RandRotate90d, RandSpatialCropd
         
         if self.num_samples_per_image > 1:
+            # RandCropByPosNegLabeld는 내부적으로 threshold를 사용하여 pos/neg 영역 찾기
+            # Soft label을 그대로 사용하되, cropping을 위한 mask 생성용으로만 binarization 사용
             self.augmentation_transforms = Compose([
                 RandFlipd(keys=keys, spatial_axis=0, prob=0.5),
                 RandFlipd(keys=keys, spatial_axis=1, prob=0.5),
@@ -103,6 +123,8 @@ class XCADataset(BaseOCTDataset):
                     pos=1,
                     neg=1,
                     num_samples=self.num_samples_per_image,
+                    # RandCropByPosNegLabeld는 내부적으로 label > 0 체크로 pos/neg 영역 찾기
+                    # Soft label 값은 그대로 유지됨
                 ),
             ])
         else:
