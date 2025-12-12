@@ -2,7 +2,7 @@
 
 A production-ready research codebase for blood vessel segmentation using supervised and diffusion-based deep learning models.
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Training
 ```bash
