@@ -185,6 +185,8 @@ class TrainRunner:
             kwargs['num_samples_per_image'] = self.data_cfg['num_samples_per_image']
         if 'label_subdir' in self.data_cfg:
             kwargs['label_subdir'] = self.data_cfg['label_subdir']
+        if 'use_sauna_transform' in self.data_cfg:
+            kwargs['use_sauna_transform'] = self.data_cfg['use_sauna_transform']
 
         return DataModuleClass(**kwargs)
 

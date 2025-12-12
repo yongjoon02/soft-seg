@@ -40,14 +40,30 @@ class XCADataset(BaseOCTDataset):
                      Options: 'label', 'label_smooth', 'label_gaussian', 'label_sauna'
     """
     
-    def __init__(self, path: str, augmentation: bool = False, crop_size: int = 128,
-                 num_samples_per_image: int = 1, label_subdir: str = 'label') -> None:
+    def __init__(
+        self, 
+        path: str, 
+        augmentation: bool = False, 
+        crop_size: int = 128,
+        num_samples_per_image: int = 1, 
+        label_subdir: str = 'label',
+        use_sauna_transform: bool = False,  # SAUNA 동적 변환 사용 여부
+    ) -> None:
         self.label_subdir = label_subdir
+        self.use_sauna_transform = use_sauna_transform  # SAUNA 변환 플래그
         super().__init__(path, augmentation, crop_size, num_samples_per_image)
 
     def get_data_fields(self) -> list[str]:
-        """XCA는 image와 label만 사용 (label_subdir로 soft label 지원)"""
-        return ['image', self.label_subdir]
+        """
+        XCA는 image와 label만 사용.
+        
+        SAUNA 동적 변환을 사용하는 경우에만 hard label도 함께 로드.
+        """
+        fields = ['image', self.label_subdir]
+        # SAUNA 동적 변환을 사용하는 경우, hard label도 함께 로드
+        if self.use_sauna_transform and self.label_subdir != 'label' and 'label' not in fields:
+            fields.append('label')  # Hard label도 함께 로드
+        return fields
 
     def _create_transforms(self):
         """X-ray 특화 transform 생성 (Base 오버라이드)"""
@@ -144,23 +160,48 @@ class XCADataset(BaseOCTDataset):
         """
         Convert binary label to geometry (soft label) for flow matching.
         
-        향후 확장 포인트: distance map, soft boundary 등 다양한 변환 구현 가능
-        현재는 단순히 label을 float로 변환 (identity transform)
-        
         Args:
-            label: Binary label tensor (C, H, W) with values in {0, 1}
+            label: Binary label tensor (C, H, W) or (B, C, H, W) with values in {0, 1}
             
         Returns:
-            geometry: Soft label tensor (C, H, W) with values in [0, 1]
-        
-        Examples of possible transformations:
-            - Distance transform: cv2.distanceTransform()
-            - Gaussian blur: gaussian_filter()
-            - Boundary softening: apply soft boundary weights
+            geometry: Geometry map tensor (same shape as label) with values in [0, 1]
+                - If use_sauna_transform=True: SAUNA geometry map normalized to [0, 1]
+                - If use_sauna_transform=False: Simple float conversion (identity transform)
         """
-        # 현재: identity transform (binary label을 그대로 사용)
-        # 향후: distance map이나 soft boundary로 변환 가능
-        return label.float()
+        if self.use_sauna_transform:
+            # SAUNA 변환 사용
+            from src.data.transforms.sauna import to_geometry as sauna_to_geometry
+            
+            # Ensure 4D tensor (B, C, H, W)
+            was_3d = label.dim() == 3
+            if was_3d:
+                label = label.unsqueeze(0)  # (C, H, W) -> (1, C, H, W)
+            
+            # Ensure channel dimension is 1
+            if label.size(1) != 1:
+                label = label[:, 0:1, :, :]  # Take first channel
+            
+            # Convert to SAUNA geometry map (returns [-1, 1] range)
+            geometry = sauna_to_geometry(
+                label,
+                use_thickness=True,
+                target_c_label="h",
+                kernel_size=None,
+                kernel_ratio=1.0
+            )
+            
+            # Normalize SAUNA output from [-1, 1] to [0, 1] for consistent threshold
+            # This allows using threshold=0.5 in validation/test steps
+            geometry = (geometry + 1.0) / 2.0
+            
+            # Remove batch dimension if input was 3D
+            if was_3d:
+                geometry = geometry.squeeze(0)
+            
+            return geometry
+        else:
+            # 기존 동작: 단순 float 변환 (identity transform)
+            return label.float()
     
     def __getitem__(self, index):
         """
@@ -184,27 +225,37 @@ class XCADataset(BaseOCTDataset):
         if self.augmentation:
             data["image"] = torch.clamp(data["image"], -1.0, 1.0)
 
-        # label_subdir != 'label'인 경우, 모델 호환성을 위해 'label' 키로 표준화
-        if self.label_subdir != 'label' and self.label_subdir in data:
-            data['label'] = data[self.label_subdir]
-            # 원본 키도 유지 (디버깅용)
-
         # Flow matching을 위한 geometry 생성
-        # - label: binary (0/1) - metrics 계산용
+        # - label: binary (0/1) - metrics 계산용 (항상 hard label)
         # - geometry: soft label - flow matching 학습용
         if 'label' in data:
-            data['geometry'] = self.to_geometry(data['label'])
+            if self.use_sauna_transform:
+                # SAUNA 동적 변환 사용: hard label에서 SAUNA로 변환
+                # 'label' 키는 항상 hard label이어야 함 (get_data_fields에서 로드)
+                hard_label = data['label']
+                
+                # Hard label에서 SAUNA geometry 생성
+                data['geometry'] = self.to_geometry(hard_label)
+            else:
+                # 기존 동작: label_subdir의 값을 geometry로 사용
+                if self.label_subdir != 'label' and self.label_subdir in data:
+                    # label_subdir이 'label_sauna' 등인 경우, 해당 값을 geometry로 사용
+                    data['geometry'] = self.to_geometry(data[self.label_subdir])
+                    # label은 hard label로 유지 (metrics 계산용)
+                else:
+                    # label_subdir == 'label'인 경우, label을 그대로 geometry로 사용
+                    data['geometry'] = self.to_geometry(data['label'])
             
             # Debug: Check if geometry is actually soft label (only log first sample to avoid spam)
-            if self.label_subdir != 'label' and not hasattr(self, '_geometry_check_logged'):
+            if self.use_sauna_transform and not hasattr(self, '_geometry_check_logged'):
                 geom = data['geometry']
                 geom_min, geom_max = geom.min().item(), geom.max().item()
                 geom_unique = torch.unique(geom).numel()
                 if geom_unique <= 2 and geom_min in [0.0, 1.0] and geom_max in [0.0, 1.0]:
-                    print(f"⚠️ WARNING: label_subdir='{self.label_subdir}' but geometry appears binary "
+                    print(f"⚠️ WARNING: use_sauna_transform=True but geometry appears binary "
                           f"(unique: {geom_unique}, range: [{geom_min:.3f}, {geom_max:.3f}])")
                 else:
-                    print(f"✅ label_subdir='{self.label_subdir}': geometry is soft label "
+                    print(f"✅ use_sauna_transform=True: geometry is SAUNA soft label "
                           f"(unique: {geom_unique}, range: [{geom_min:.3f}, {geom_max:.3f}])")
                 self._geometry_check_logged = True
 
@@ -237,6 +288,7 @@ class XCADataModule(BaseOCTDataModule):
         train_bs: int = 8,
         num_samples_per_image: int = 1,
         label_subdir: str = 'label',
+        use_sauna_transform: bool = False,  # SAUNA 동적 변환 사용 여부
     ):
         """XCA 데이터 모듈 초기화
         
@@ -248,8 +300,10 @@ class XCADataModule(BaseOCTDataModule):
             train_bs: 학습 배치 크기
             num_samples_per_image: 이미지당 크롭 샘플 수
             label_subdir: Label 서브디렉토리 ('label', 'label_smooth', 'label_gaussian', 'label_sauna')
+            use_sauna_transform: True이면 hard label에서 SAUNA로 동적 변환 (기본값: False, 기존 동작 유지)
         """
         self.label_subdir = label_subdir
+        self.use_sauna_transform = use_sauna_transform
         super().__init__(
             train_dir=train_dir,
             val_dir=val_dir,
@@ -268,6 +322,7 @@ class XCADataModule(BaseOCTDataModule):
             crop_size=self.crop_size,
             num_samples_per_image=self.num_samples_per_image,
             label_subdir=self.label_subdir,
+            use_sauna_transform=self.use_sauna_transform,
         )
     
     def create_val_dataset(self):
@@ -278,6 +333,7 @@ class XCADataModule(BaseOCTDataModule):
             crop_size=self.crop_size,
             num_samples_per_image=1,
             label_subdir=self.label_subdir,
+            use_sauna_transform=self.use_sauna_transform,
         )
     
     def create_test_dataset(self):
@@ -290,6 +346,7 @@ class XCADataModule(BaseOCTDataModule):
             crop_size=self.crop_size,
             num_samples_per_image=1,
             label_subdir=self.label_subdir,
+            use_sauna_transform=self.use_sauna_transform,
         )
 
 
