@@ -8,6 +8,7 @@ All loss functions are organized in separate files for better maintainability:
 - l1_loss.py: L1 Loss (Mean Absolute Error)
 - l2_loss.py: L2 Loss (Mean Squared Error)
 - topo_loss.py: Topology-aware Loss
+ - flow_matching_loss.py: Composite loss for flow matching models
 
 Usage:
     from src.losses import SoftCrossEntropyLoss, SoftBCELoss, DiceLoss, FocalDiceLoss, L1Loss, L2Loss, TopoLoss
@@ -21,6 +22,7 @@ from .focal_dice_loss import FocalDiceLoss
 from .l1_loss import L1Loss
 from .l2_loss import L2Loss
 from .topo_loss import TopoLoss
+from .flow_matching_loss import FlowMatchingLoss
 
 
 __all__ = [
@@ -31,6 +33,7 @@ __all__ = [
     'L1Loss',
     'L2Loss',
     'TopoLoss',
+    'FlowMatchingLoss',
 ]
 
 

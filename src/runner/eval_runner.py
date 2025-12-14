@@ -108,48 +108,36 @@ class EvalRunner:
             label_subdir: Label subdirectory (e.g., 'label_sauna'). 
                          If None, uses default 'label'.
         """
-        from src.data.octa500 import OCTA500_3M_DataModule, OCTA500_6M_DataModule
-        from src.data.rossa import ROSSA_DataModule
-        from src.data.xca import XCA_DataModule
+        import inspect
 
         info = self.dataset_info
+        dm_cls = info.class_ref
+        sig = inspect.signature(dm_cls.__init__)
 
-        if self.dataset == 'octa500_3m':
-            return OCTA500_3M_DataModule(
-                train_dir=info.default_train_dir,
-                val_dir=info.default_val_dir,
-                test_dir=info.default_test_dir,
-                crop_size=info.default_crop_size,
-                train_bs=1,  # Batch size 1 for evaluation
-            )
-        elif self.dataset == 'octa500_6m':
-            return OCTA500_6M_DataModule(
-                train_dir=info.default_train_dir,
-                val_dir=info.default_val_dir,
-                test_dir=info.default_test_dir,
-                crop_size=info.default_crop_size,
-                train_bs=1,
-            )
-        elif self.dataset == 'rossa':
-            return ROSSA_DataModule(
-                train_manual_dir=info.default_train_dir,
-                train_sam_dir=info.default_train_dir.replace('train_manual', 'train_sam'),
-                val_dir=info.default_val_dir,
-                test_dir=info.default_test_dir,
-                crop_size=info.default_crop_size,
-                train_bs=1,
-            )
-        elif self.dataset == 'xca':
-            return XCA_DataModule(
-                train_dir=info.default_train_dir,
-                val_dir=info.default_val_dir,
-                test_dir=info.default_test_dir,
-                crop_size=info.default_crop_size,
-                train_bs=1,
-                label_subdir=label_subdir or 'label',  # Use provided label_subdir or default
-            )
-        else:
-            raise ValueError(f"Unknown dataset: {self.dataset}")
+        # Build kwargs from metadata, respecting the datamodule signature
+        kwargs = {}
+        params = sig.parameters
+
+        if 'train_dir' in params:
+            kwargs['train_dir'] = info.default_train_dir
+        if 'val_dir' in params:
+            kwargs['val_dir'] = info.default_val_dir
+        if 'test_dir' in params:
+            kwargs['test_dir'] = info.default_test_dir
+        if 'train_manual_dir' in params:
+            kwargs['train_manual_dir'] = info.default_train_dir
+        if 'train_sam_dir' in params and info.default_train_dir:
+            kwargs['train_sam_dir'] = info.default_train_dir.replace('train_manual', 'train_sam')
+
+        if 'crop_size' in params:
+            kwargs['crop_size'] = info.default_crop_size
+        if 'train_bs' in params:
+            kwargs['train_bs'] = 1  # evaluation은 항상 batch_size=1로 고정
+        if label_subdir and 'label_subdir' in params:
+            kwargs['label_subdir'] = label_subdir
+
+        # Fallback: respect provided defaults in signature if metadata missing
+        return dm_cls(**kwargs)
 
     def evaluate_model(self, model_name: str, checkpoint_path: Optional[Path] = None) -> Optional[EvaluationResult]:
         """

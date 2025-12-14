@@ -421,6 +421,7 @@ class FlowModel(L.LightningModule):
         bce_weight: float = 0.5,
         l2_weight: float = 0.1,
         dice_weight: float = 0.2,
+        loss: dict | None = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -485,16 +486,23 @@ class FlowModel(L.LightningModule):
         self.log_image_enabled = log_image_enabled
         self.log_image_names = log_image_names if log_image_names is not None else ['00036.png']
         
-        # Loss configuration
-        self.loss_type = loss_type
-        self.bce_weight = bce_weight
-        self.l2_weight = l2_weight
-        self.dice_weight = dice_weight
-        
-        # Initialize loss functions if needed
-        if 'dice' in loss_type:
-            from src.losses import DiceLoss
-            self.dice_loss = DiceLoss()
+        # Loss configuration (registry 우선)
+        from src.registry import LOSS_REGISTRY
+        self.use_registry_loss = loss is not None
+        if self.use_registry_loss:
+            loss_name = loss.get('name')
+            loss_params = loss.get('params', {})
+            if loss_name not in LOSS_REGISTRY:
+                raise ValueError(f"Unknown loss: {loss_name}. Available: {LOSS_REGISTRY.keys()}")
+            self.loss_fn = LOSS_REGISTRY.get(loss_name)(**loss_params)
+        else:
+            self.loss_type = loss_type
+            self.bce_weight = bce_weight
+            self.l2_weight = l2_weight
+            self.dice_weight = dice_weight
+            if 'dice' in loss_type:
+                from src.losses import DiceLoss
+                self.dice_loss = DiceLoss()
 
     def training_step(self, batch, batch_idx):
         images = batch['image']  # condition
@@ -518,7 +526,12 @@ class FlowModel(L.LightningModule):
         v = self.unet(xt, t, images)
         
         # Compute loss based on loss_type
-        loss = self._compute_loss(v, ut, xt, geometry, t)
+        if self.use_registry_loss:
+            loss, loss_dict = self.loss_fn(v, ut, xt, geometry)
+            for name, value in loss_dict.items():
+                self.log(f'train/{name}_loss', value, prog_bar=False, sync_dist=True)
+        else:
+            loss = self._compute_loss(v, ut, xt, geometry, t)
         
         # Log (sync_dist for DDP)
         self.log('train/loss', loss, prog_bar=True, sync_dist=True)

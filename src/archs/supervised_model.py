@@ -1,13 +1,14 @@
 """Supervised learning model for OCT segmentation."""
 
+import inspect
 import warnings
+
 import lightning.pytorch as L
 import torch
 import torch.nn as nn
 from monai.inferers import SlidingWindowInferer
 from torchmetrics import MetricCollection
 
-from src.archs.components import CSNet, DSCNet
 from src.losses import SoftBCELoss, SoftCrossEntropyLoss, TopoLoss, L1Loss, L2Loss
 from src.metrics import (
     Betti0Error,
@@ -19,11 +20,7 @@ from src.metrics import (
     Specificity,
     clDice,
 )
-
-MODEL_REGISTRY = {
-    'csnet': CSNet,
-    'dscnet': DSCNet,
-}
+from src.registry import LOSS_REGISTRY, MODEL_REGISTRY as GLOBAL_MODEL_REGISTRY
 
 
 class ModelWrapper(nn.Module):
@@ -63,6 +60,9 @@ class SupervisedModel(L.LightningModule):
         topo_size: int = 100,
         topo_pers_thresh: float = 0.0,
         topo_pers_thresh_perfect: float = 0.99,
+        loss_name: str = None,  # Deprecated in favor of loss config
+        loss_kwargs: dict = None,
+        loss: dict | None = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -75,72 +75,34 @@ class SupervisedModel(L.LightningModule):
         self.arch_name = arch_name
         self.soft_label = soft_label  # Store soft label mode
 
-        # 모델 생성
-        if arch_name not in MODEL_REGISTRY:
-            raise ValueError(f"Unknown architecture: {arch_name}. Choose from {list(MODEL_REGISTRY.keys())}")
-
-        model_cls = MODEL_REGISTRY[arch_name]
-
-        # Create model instance
-        base_model = model_cls(in_channels=in_channels, num_classes=num_classes)
+        # 모델 생성 (registry 기반)
+        base_model = self._build_model(arch_name, in_channels, num_classes)
 
         # Wrap model to handle dict outputs
         self.model = ModelWrapper(base_model)
 
-        # Sliding window inferer for validation (128x128 patches)
+        # Sliding window inferer for validation uses configured img_size
         self.inferer = SlidingWindowInferer(
-            roi_size=(224, 224),
+            roi_size=(img_size, img_size),
             sw_batch_size=4,
             overlap=0.25,
             mode='gaussian',
         )
 
-        # Loss function (soft label aware)
-        if loss_type == 'bce':
-            self.loss_fn = SoftBCELoss(soft_label=soft_label)
-        elif loss_type == 'l1':
-            self.loss_fn = L1Loss(soft_label=soft_label)
-        elif loss_type == 'l2':
-            self.loss_fn = L2Loss(soft_label=soft_label)
-        elif loss_type == 'bce_l1':
-            # BCE + L1 loss
-            self.loss_fn = nn.ModuleDict({
-                'bce': SoftBCELoss(soft_label=soft_label),
-                'l1': L1Loss(soft_label=soft_label),
-            })
-            self.l1_lambda = l1_lambda  # Store L1 weight
-        elif loss_type == 'bce_l2':
-            # BCE + L2 loss (both support soft labels)
-            self.loss_fn = nn.ModuleDict({
-                'bce': SoftBCELoss(soft_label=soft_label),
-                'l2': L2Loss(soft_label=soft_label),
-            })
-            self.l2_lambda = l2_lambda  # Store L2 weight
-        elif loss_type == 'bce_topo':
-            # BCE + Topology-aware loss
-            # NOTE: TopoLoss requires binary hard masks, not soft labels
-            # If soft_label=True, TopoLoss will be disabled to avoid conflict
-            if soft_label:
-                # Soft label mode: use BCE only (TopoLoss incompatible with soft labels)
-                warnings.warn(
-                    "TopoLoss is disabled when soft_label=True. "
-                    "Topology loss requires binary hard masks, not soft labels. "
-                    "Using BCE only."
-                )
-                self.loss_fn = SoftBCELoss(soft_label=soft_label)
-            else:
-                # Hard label mode: BCE + TopoLoss
-                self.loss_fn = nn.ModuleDict({
-                    'bce': SoftBCELoss(soft_label=False),
-                    'topo': TopoLoss(
-                        lambda_weight=topo_lambda,
-                        topo_size=topo_size,
-                        pers_thresh=topo_pers_thresh,
-                        pers_thresh_perfect=topo_pers_thresh_perfect,
-                    )
-                })
-        else:  # default: 'ce'
-            self.loss_fn = SoftCrossEntropyLoss(soft_label=soft_label)
+        # Loss function (registry 우선, 없으면 기존 분기)
+        self.loss_fn = self._build_loss(
+            loss_cfg=loss,
+            loss_name=loss_name,
+            loss_kwargs=loss_kwargs or {},
+            loss_type=loss_type,
+            soft_label=soft_label,
+            l1_lambda=l1_lambda,
+            l2_lambda=l2_lambda,
+            topo_lambda=topo_lambda,
+            topo_size=topo_size,
+            topo_pers_thresh=topo_pers_thresh,
+            topo_pers_thresh_perfect=topo_pers_thresh_perfect,
+        )
 
         # Metrics
         self.val_metrics = MetricCollection({
@@ -487,3 +449,93 @@ class SupervisedModel(L.LightningModule):
                 'interval': 'epoch',
             }
         }
+
+    # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
+    def _build_model(self, arch_name: str, in_channels: int, num_classes: int) -> nn.Module:
+        """Fetch model class from global registry and instantiate."""
+        if arch_name not in GLOBAL_MODEL_REGISTRY:
+            available = list(GLOBAL_MODEL_REGISTRY.keys())
+            raise ValueError(f"Unknown architecture: {arch_name}. Choose from {available}")
+
+        model_cls = GLOBAL_MODEL_REGISTRY.get(arch_name)
+        return model_cls(in_channels=in_channels, num_classes=num_classes)
+
+    def _build_loss(
+        self,
+        *,
+        loss_cfg: dict | None,
+        loss_name: str | None,
+        loss_kwargs: dict,
+        loss_type: str,
+        soft_label: bool,
+        l1_lambda: float,
+        l2_lambda: float,
+        topo_lambda: float,
+        topo_size: int,
+        topo_pers_thresh: float,
+        topo_pers_thresh_perfect: float,
+    ):
+        """Construct loss. Registry 우선, 없으면 기존 분기 사용."""
+        if loss_cfg:
+            cfg_name = loss_cfg.get('name')
+            cfg_params = loss_cfg.get('params', {})
+            if cfg_name not in LOSS_REGISTRY:
+                raise ValueError(f"Unknown loss: {cfg_name}. Available: {LOSS_REGISTRY.keys()}")
+            loss_cls = LOSS_REGISTRY.get(cfg_name)
+            sig = inspect.signature(loss_cls.__init__)
+            if 'soft_label' in sig.parameters and 'soft_label' not in cfg_params:
+                cfg_params = {**cfg_params, 'soft_label': soft_label}
+            return loss_cls(**cfg_params)
+
+        if loss_name:
+            if loss_name not in LOSS_REGISTRY:
+                raise ValueError(f"Unknown loss: {loss_name}. Available: {LOSS_REGISTRY.keys()}")
+            loss_cls = LOSS_REGISTRY.get(loss_name)
+
+            # soft_label 지원 인자가 있으면 자동 주입
+            sig = inspect.signature(loss_cls.__init__)
+            if 'soft_label' in sig.parameters and 'soft_label' not in loss_kwargs:
+                loss_kwargs = {**loss_kwargs, 'soft_label': soft_label}
+            return loss_cls(**loss_kwargs)
+
+        # 기존 하드코딩 분기 (backward compatibility)
+        if loss_type == 'bce':
+            return SoftBCELoss(soft_label=soft_label)
+        if loss_type == 'l1':
+            return L1Loss(soft_label=soft_label)
+        if loss_type == 'l2':
+            return L2Loss(soft_label=soft_label)
+        if loss_type == 'bce_l1':
+            self.l1_lambda = l1_lambda
+            return nn.ModuleDict({
+                'bce': SoftBCELoss(soft_label=soft_label),
+                'l1': L1Loss(soft_label=soft_label),
+            })
+        if loss_type == 'bce_l2':
+            self.l2_lambda = l2_lambda
+            return nn.ModuleDict({
+                'bce': SoftBCELoss(soft_label=soft_label),
+                'l2': L2Loss(soft_label=soft_label),
+            })
+        if loss_type == 'bce_topo':
+            if soft_label:
+                warnings.warn(
+                    "TopoLoss is disabled when soft_label=True. "
+                    "Topology loss requires binary hard masks, not soft labels. "
+                    "Using BCE only."
+                )
+                return SoftBCELoss(soft_label=soft_label)
+            return nn.ModuleDict({
+                'bce': SoftBCELoss(soft_label=False),
+                'topo': TopoLoss(
+                    lambda_weight=topo_lambda,
+                    topo_size=topo_size,
+                    pers_thresh=topo_pers_thresh,
+                    pers_thresh_perfect=topo_pers_thresh_perfect,
+                )
+            })
+
+        # default: cross entropy
+        return SoftCrossEntropyLoss(soft_label=soft_label)

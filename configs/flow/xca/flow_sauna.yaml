@@ -27,11 +27,14 @@ model:
   dropout: 0.0
   label_dim: 0
   augment_dim: 0
-  # Loss configuration for SAUNA soft labels
-  loss_type: l1_bce  # Recommended: L1 + BCE for SAUNA soft labels
-  bce_weight: 0.5    # Weight for BCE loss (SAUNA soft label optimization)
-  l2_weight: 0.1     # Weight for L2 loss (optional, for smoothness)
-  dice_weight: 0.2   # Weight for Dice loss (optional, for segmentation quality)
+  # Loss configuration for SAUNA soft labels (registry-based)
+  loss:
+    name: flow_matching
+    params:
+      scheme: l1_bce
+      weights:
+        l1: 1.0
+        bce: 0.5
 
 data:
   name: xca
@@ -52,4 +55,3 @@ trainer:
   check_val_every_n_epoch: 25
   accumulate_grad_batches: 8  # 실효 배치: 6 GPU × 1 × 8 = 48
   gradient_clip_val: 1.0
-

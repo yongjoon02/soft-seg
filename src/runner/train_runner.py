@@ -228,6 +228,7 @@ class TrainRunner:
                 bce_weight=self.model_cfg.get('bce_weight', 0.5),
                 l2_weight=self.model_cfg.get('l2_weight', 0.1),
                 dice_weight=self.model_cfg.get('dice_weight', 0.2),
+                loss=self.model_cfg.get('loss', None),
             )
         elif self.model_info.task == 'supervised':
             # SupervisedModel uses img_size instead of image_size
@@ -243,6 +244,13 @@ class TrainRunner:
             
             # Loss type: 'ce' (default) or 'bce'
             supervised_args['loss_type'] = self.model_cfg.get('loss_type', 'ce')
+            # Optional: loss registry 사용
+            if 'loss_name' in self.model_cfg:
+                supervised_args['loss_name'] = self.model_cfg['loss_name']
+            if 'loss_kwargs' in self.model_cfg:
+                supervised_args['loss_kwargs'] = self.model_cfg['loss_kwargs']
+            if 'loss' in self.model_cfg:
+                supervised_args['loss'] = self.model_cfg['loss']
             
             return SupervisedModel(**supervised_args)
         else:  # diffusion

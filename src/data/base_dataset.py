@@ -7,6 +7,7 @@ import os
 from abc import ABC, abstractmethod
 
 import lightning as L
+import torch
 from monai.data import PILReader
 from monai.transforms import (
     Compose,
@@ -231,6 +232,20 @@ class BaseOCTDataset(Dataset, ABC):
                 sample_idx = index % self.num_samples_per_image
                 data = data[sample_idx]
 
+        # 기본 geometry가 없으면 hard label을 geometry로 제공 (flow/확장 모델 호환용)
+        if 'geometry' not in data and 'label' in data:
+            data['geometry'] = data['label'].float()
+
+        # Always attach a coordinate grid for consumers that need it (e.g., flow models)
+        if 'coordinate' not in data and 'image' in data:
+            c, h, w = data['image'].shape
+            device = data['image'].device if hasattr(data['image'], 'device') else None
+            # Normalized [-1, 1] meshgrid, shape (2, H, W)
+            y = torch.linspace(-1, 1, steps=h, device=device)
+            x = torch.linspace(-1, 1, steps=w, device=device)
+            yy, xx = torch.meshgrid(y, x, indexing='ij')
+            data['coordinate'] = torch.stack([xx, yy], dim=0)
+
         return data
 
 
@@ -308,15 +323,22 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
         # Create training dataset (subclass-specific logic)
         self.train_dataset = self.create_train_dataset()
 
-        # Create validation and test datasets (standard logic)
-        self.val_dataset = self.dataset_class(
+        # Create validation and test datasets (subclass may override)
+        self.val_dataset = self.create_val_dataset()
+        self.test_dataset = self.create_test_dataset()
+
+    def create_val_dataset(self):
+        """Create validation dataset (can be overridden by subclasses)."""
+        return self.dataset_class(
             self.val_dir,
             augmentation=False,
             crop_size=self.crop_size,
             num_samples_per_image=1  # val/test always use 1 sample
         )
 
-        self.test_dataset = self.dataset_class(
+    def create_test_dataset(self):
+        """Create test dataset (can be overridden by subclasses)."""
+        return self.dataset_class(
             self.test_dir,
             augmentation=False,
             crop_size=self.crop_size,

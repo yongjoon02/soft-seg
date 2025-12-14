@@ -8,8 +8,6 @@ import torch
 from monai.inferers import SlidingWindowInferer
 from torchmetrics import MetricCollection
 
-from src.archs.components.binomial_diffusion import create_berdiff
-from src.archs.components.gaussian_diffusion import create_medsegdiff
 from src.metrics import (
     Betti0Error,
     Betti1Error,
@@ -20,13 +18,7 @@ from src.metrics import (
     Specificity,
     clDice,
 )
-
-MODEL_REGISTRY = {
-    # Gaussian Diffusion model
-    'medsegdiff': create_medsegdiff,
-    # Bernoulli Diffusion model
-    'berdiff': create_berdiff,
-}
+from src.registry import MODEL_REGISTRY as GLOBAL_MODEL_REGISTRY
 
 
 class DiffusionModel(L.LightningModule):
@@ -73,11 +65,11 @@ class DiffusionModel(L.LightningModule):
             kernel_ratio=soft_label_kernel_ratio,
         )
 
-        # Create diffusion model
-        if arch_name not in MODEL_REGISTRY:
-            raise ValueError(f"Unknown architecture: {arch_name}. Choose from {list(MODEL_REGISTRY.keys())}")
+        # Create diffusion model (registry 기반)
+        if arch_name not in GLOBAL_MODEL_REGISTRY:
+            raise ValueError(f"Unknown architecture: {arch_name}. Choose from {list(GLOBAL_MODEL_REGISTRY.keys())}")
 
-        create_fn = MODEL_REGISTRY[arch_name]
+        create_fn = GLOBAL_MODEL_REGISTRY.get(arch_name)
         self.diffusion_model = create_fn(image_size=image_size, dim=dim, timesteps=timesteps)
 
         # EMA model for stable inference

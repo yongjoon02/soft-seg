@@ -9,6 +9,7 @@ from typing import Optional
 import torch
 from monai.transforms import (
     Compose,
+    EnsureChannelFirstd,
     Lambda,
     RandAdjustContrastd,
     RandRotated,
@@ -60,9 +61,9 @@ class XCADataset(BaseOCTDataset):
         SAUNA 동적 변환을 사용하는 경우에만 hard label도 함께 로드.
         """
         fields = ['image', self.label_subdir]
-        # SAUNA 동적 변환을 사용하는 경우, hard label도 함께 로드
-        if self.use_sauna_transform and self.label_subdir != 'label' and 'label' not in fields:
-            fields.append('label')  # Hard label도 함께 로드
+        # 항상 hard label을 추가로 로드해 메트릭/로그에서 안전하게 사용
+        if 'label' not in fields:
+            fields.append('label')
         return fields
 
     def _create_transforms(self):
@@ -78,7 +79,11 @@ class XCADataset(BaseOCTDataset):
             """Convert RGB to Grayscale by taking first channel."""
             result = {**d}
             result["image"] = d["image"][:1] if hasattr(d["image"], "shape") and d["image"].shape[0] > 1 else d["image"]
+            # soft label 채널
             result[label_key] = d[label_key][:1] if hasattr(d[label_key], "shape") and d[label_key].shape[0] > 1 else d[label_key]
+            # hard label 채널도 항상 1채널 보장
+            if "label" in d:
+                result["label"] = d["label"][:1] if hasattr(d["label"], "shape") and d["label"].shape[0] > 1 else d["label"]
             return result
 
         # Soft label 정규화 함수 (단순 /255, min-max가 아님)
@@ -106,13 +111,17 @@ class XCADataset(BaseOCTDataset):
                         result[label_key] = torch.from_numpy(label_data).float()
             return result
 
-        # Default transforms에 RGB→Gray 추가
-        self.default_transforms = Compose([
-            self.default_transforms.transforms[0],  # EnsureChannelFirstd
+        # Default transforms에 RGB→Gray 추가 + hard/soft label 처리
+        default_transforms = [
+            EnsureChannelFirstd(keys=keys),
             rgb_to_gray,  # RGB→Grayscale
             ScaleIntensityd(keys="image", minv=-1.0, maxv=1.0),
-            normalize_soft_label,  # Soft label: 단순 /255 (min-max 아님)
-        ])
+        ]
+        if "label" in keys:
+            default_transforms.append(ScaleIntensityd(keys="label", minv=0.0, maxv=1.0))
+        default_transforms.append(normalize_soft_label)  # Soft label: 단순 /255 (min-max 아님)
+
+        self.default_transforms = Compose(default_transforms)
 
         # X-ray 특화 augmentation
         xray_augments = [
