@@ -5,7 +5,7 @@ import lightning.pytorch as L
 from torchmetrics import MetricCollection
 from torchdiffeq import odeint
 
-from src.utils.registry import ARCHS_REGISTRY
+from src.registry import ARCHS_REGISTRY
 from src.archs.components import unet  # noqa: F401 - Register architectures
 from src.archs.components.flow import SchrodingerBridgeConditionalFlowMatcher
 from src.metrics.general_metrics import Dice, Precision, Recall, Specificity, JaccardIndex

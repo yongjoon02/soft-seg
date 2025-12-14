@@ -16,7 +16,7 @@ from monai.transforms import (
 )
 
 from src.data.base_dataset import BaseOCTDataModule, BaseOCTDataset
-from src.utils.registry import DATASET_REGISTRY
+from src.registry import DATASET_REGISTRY
 
 
 class XCADataset(BaseOCTDataset):

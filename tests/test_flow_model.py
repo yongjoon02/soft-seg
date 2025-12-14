@@ -21,7 +21,7 @@ print("1. Checking Registered Architectures")
 print("="*60)
 
 try:
-    from src.utils.registry import ARCHS_REGISTRY
+    from src.registry import ARCHS_REGISTRY
     print(f"Total registered: {len(list(ARCHS_REGISTRY.keys()))}")
     for name in ARCHS_REGISTRY.keys():
         print(f"  - {name}")

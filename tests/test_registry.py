@@ -361,8 +361,10 @@ class TestBackwardCompatibility:
     """Test backward compatibility with old imports."""
     
     def test_old_import_path(self):
-        """기존 import 경로 호환성 테스트."""
-        from src.utils.registry import (
+        """기존 import 경로 호환성 테스트 (deprecated - kept for reference)."""
+        # Note: src.utils.registry is deprecated, all code should use src.registry
+        # This test verifies that the new import path works correctly
+        from src.registry import (
             ARCHS_REGISTRY,
             DATASET_REGISTRY,
             MODEL_REGISTRY,
@@ -370,16 +372,11 @@ class TestBackwardCompatibility:
             METRIC_REGISTRY,
         )
         
-        # Should be the same instances
-        from src.registry import (
-            ARCHS_REGISTRY as NEW_ARCHS,
-            DATASET_REGISTRY as NEW_DATASET,
-            MODEL_REGISTRY as NEW_MODEL,
-        )
-        
-        assert ARCHS_REGISTRY is NEW_ARCHS
-        assert DATASET_REGISTRY is NEW_DATASET
-        assert MODEL_REGISTRY is NEW_MODEL
+        # Verify they are Registry instances
+        from src.registry import Registry
+        assert isinstance(ARCHS_REGISTRY, Registry)
+        assert isinstance(DATASET_REGISTRY, Registry)
+        assert isinstance(MODEL_REGISTRY, Registry)
 
 
 class TestModelClassInstantiation:

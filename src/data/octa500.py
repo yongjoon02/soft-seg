@@ -1,6 +1,6 @@
 """OCTA500 dataset with base class inheritance."""
 from src.data.base_dataset import BaseOCTDataModule, BaseOCTDataset
-from src.utils.registry import DATASET_REGISTRY
+from src.registry import DATASET_REGISTRY
 from src.utils.visualize_dataloader import visualize_dataset
 
 
