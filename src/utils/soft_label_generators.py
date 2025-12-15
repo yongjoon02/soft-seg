@@ -222,7 +222,7 @@ def extract_thickness_uncertainty_map(
         return np.zeros_like(img_dist, dtype=np.float32), thickness_max
     
     fg_max = thickness_max
-    img_maxpool = do_max_pooling(img_dist)
+    img_maxpool = do_max_pooling(img_dist, kernel_ratio=kernel_ratio)
     
     if target_c_label == "h":
         # Foreground thickness
@@ -231,7 +231,7 @@ def extract_thickness_uncertainty_map(
         # Background thickness
         img_bg_dist = compute_distance_transform(255 - gt_255)
         img_bg_dist[img_bg_dist >= fg_max] = fg_max
-        img_bg_maxpool = do_max_pooling(img_bg_dist)
+        img_bg_maxpool = do_max_pooling(img_bg_dist, kernel_ratio=kernel_ratio)
         img_thick_neg = (gt_255 <= 0) * img_bg_maxpool / (thickness_max + 1e-6)
         img_thick_neg = np.clip(img_thick_neg, 0.0, 1.0)
         

@@ -77,12 +77,23 @@ def extract_thickness_uncertainty_map(gt, kernel_size=None, tr=None, target_c_la
     img_dist = transform_distance_map(img_dist, tr)
     thickness_max = img_dist.max()
     fg_max = thickness_max
-    
-    img_maxpool = do_max_pooling(img_dist, kernel_size=kernel_size)
+
+    if thickness_max == 0.0:
+        return np.zeros_like(img_dist, dtype=np.float32), thickness_max
+
+    img_maxpool = do_max_pooling(
+        img_dist,
+        kernel_size=kernel_size,
+        kernel_ratio=kernel_ratio,
+    )
     
     if target_c_label in ["hh"]:
         img_thick_pos = (gt > 0) * img_maxpool / (thickness_max + 1e-6)
-        img_maxpool = do_max_pooling(img_dist, kernel_size=kernel_size, kernel_ratio=kernel_ratio)
+        img_maxpool = do_max_pooling(
+            img_dist,
+            kernel_size=kernel_size,
+            kernel_ratio=kernel_ratio,
+        )
         img_thick_neg = (gt <= 0) * img_maxpool / (thickness_max + 1e-6)
         img_swt = np.where(gt > 0, img_thick_pos, img_thick_neg)
     elif target_c_label in ["h"]:
@@ -90,7 +101,11 @@ def extract_thickness_uncertainty_map(gt, kernel_size=None, tr=None, target_c_la
         img_bg_dist = compute_distance_transform(255 - gt)
         img_bg_dist = transform_distance_map(img_bg_dist, tr)
         img_bg_dist[img_bg_dist >= fg_max] = fg_max
-        img_bg_maxpool = do_max_pooling(img_bg_dist, kernel_size=kernel_size)
+        img_bg_maxpool = do_max_pooling(
+            img_bg_dist,
+            kernel_size=kernel_size,
+            kernel_ratio=kernel_ratio,
+        )
         img_thick_neg = (gt <= 0) * img_bg_maxpool / (thickness_max + 1e-6)
         img_thick_neg = np.clip(img_thick_neg, a_min=0.0, a_max=1.0)
         img_swt = np.where(gt > 0, img_thick_pos, img_thick_neg)
@@ -209,4 +224,3 @@ def from_geometry(
         dtype = torch.float32
     # geo == sauna, mask is sauna > 0 ↔ geo > 0
     return (geo > thresh).to(dtype=dtype)
-
