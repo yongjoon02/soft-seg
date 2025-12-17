@@ -45,6 +45,8 @@ def parse_args():
     # Config file (primary method)
     parser.add_argument('--config', type=str,
                        help='Path to YAML config file')
+    parser.add_argument('--lr-find', action='store_true',
+                       help='Run Lightning LR finder instead of full training')
     
     # Model/Data (required if no config)
     parser.add_argument('--model', type=str,
@@ -119,9 +121,13 @@ def main():
             }
     else:
         parser.error("Either --config or both --model and --data are required")
-    
+
     # Merge CLI overrides
     config = merge_config_with_args(config, args)
+    if args.lr_find:
+        # Flag for TrainRunner to trigger lr finder mode
+        config.setdefault('trainer', {})
+        config['trainer']['lr_find'] = True
     
     # Print final config
     print("\n" + "="*60)

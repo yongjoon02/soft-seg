@@ -21,6 +21,7 @@ set -e
 
 cd /home/yongjun/soft-seg
 source .venv/bin/activate
+export PYTHONUNBUFFERED=1  # 즉시 로그 flush
 
 # 기본값
 CONFIG=""
@@ -189,6 +190,7 @@ if ${DDP}; then
     
     nohup bash -c "source .venv/bin/activate && \
         CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} \
+        PYTHONUNBUFFERED=1 \
         DDP_DEVICES=-1 \
         DDP_STRATEGY=${DDP_STRATEGY} \
         DDP_PRECISION=${DDP_PRECISION} \
@@ -199,7 +201,7 @@ if ${DDP}; then
     # Wait for experiment_id to appear in log, then rename file
     (
         sleep 5  # Wait for training to start
-        for i in {1..30}; do
+        for i in {1..90}; do
             if [[ -f "${TEMP_LOG_FILE}" ]]; then
                 EXP_ID=$(grep -m 1 "Experiment ID:" "${TEMP_LOG_FILE}" 2>/dev/null | sed 's/.*Experiment ID: //' | tr -d '[:space:]')
                 if [[ -n "$EXP_ID" ]]; then
@@ -258,14 +260,14 @@ if [[ -n "$CONFIG" ]]; then
     echo "   Monitor: tail -f ${TEMP_LOG_FILE}"
     echo ""
     
-    nohup bash -c "CUDA_VISIBLE_DEVICES=${GPU} uv run ${TRAIN_CMD}" > "${TEMP_LOG_FILE}" 2>&1 &
+    nohup bash -c "CUDA_VISIBLE_DEVICES=${GPU} PYTHONUNBUFFERED=1 uv run ${TRAIN_CMD}" > "${TEMP_LOG_FILE}" 2>&1 &
     
     PID=$!
     
     # Wait for experiment_id to appear in log, then rename file
     (
         sleep 5  # Wait for training to start
-        for i in {1..30}; do
+        for i in {1..90}; do
             if [[ -f "${TEMP_LOG_FILE}" ]]; then
                 EXP_ID=$(grep -m 1 "Experiment ID:" "${TEMP_LOG_FILE}" 2>/dev/null | sed 's/.*Experiment ID: //' | tr -d '[:space:]')
                 if [[ -n "$EXP_ID" ]]; then

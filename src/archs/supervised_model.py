@@ -9,7 +9,7 @@ import torch.nn as nn
 from monai.inferers import SlidingWindowInferer
 from torchmetrics import MetricCollection
 
-from src.losses import SoftBCELoss, SoftCrossEntropyLoss, TopoLoss, L1Loss, L2Loss
+from src.losses import SoftBCELoss, SoftCrossEntropyLoss, TopoLoss, L1Loss, L2Loss, HuberLoss
 from src.metrics import (
     Betti0Error,
     Betti1Error,
@@ -53,9 +53,10 @@ class SupervisedModel(L.LightningModule):
         log_image_enabled: bool = False,
         log_image_names: list = None,
         soft_label: bool = False,  # soft label 학습 모드
-        loss_type: str = 'ce',  # 'ce' / 'bce' / 'l1' / 'l2' / 'bce_l1' / 'bce_l2' / 'bce_topo'
+        loss_type: str = 'ce',  # 'ce' / 'bce' / 'l1' / 'l2' / 'bce_l1' / 'bce_l2' / 'bce_huber' / 'bce_topo'
         l1_lambda: float = 0.2,  # Weight for L1 loss when using bce_l1
         l2_lambda: float = 0.5,  # Weight for L2 loss when using bce_l2
+        huber_lambda: float = 0.2,  # Weight for Huber loss when using bce_huber
         topo_lambda: float = 0.1,
         topo_size: int = 100,
         topo_pers_thresh: float = 0.0,
@@ -98,6 +99,7 @@ class SupervisedModel(L.LightningModule):
             soft_label=soft_label,
             l1_lambda=l1_lambda,
             l2_lambda=l2_lambda,
+            huber_lambda=huber_lambda,
             topo_lambda=topo_lambda,
             topo_size=topo_size,
             topo_pers_thresh=topo_pers_thresh,
@@ -229,6 +231,21 @@ class SupervisedModel(L.LightningModule):
                 self.log('train/bce_loss', bce_loss, prog_bar=False)
                 self.log('train/l2_loss', l2_loss, prog_bar=False)
             
+            elif 'huber' in self.loss_fn:
+                # BCE + Huber loss
+                huber_loss = self.loss_fn['huber'](logits, train_labels)
+                
+                if torch.isnan(huber_loss) or torch.isinf(huber_loss):
+                    print(f"⚠️ WARNING: Huber loss is NaN/Inf at step {batch_idx}: {huber_loss}")
+                    huber_loss = torch.tensor(0.0, device=huber_loss.device, dtype=huber_loss.dtype, requires_grad=True)
+                
+                # Combine BCE and Huber with weight
+                loss = bce_loss + self.huber_lambda * huber_loss
+                
+                # Log individual losses
+                self.log('train/bce_loss', bce_loss, prog_bar=False)
+                self.log('train/huber_loss', huber_loss, prog_bar=False)
+            
             elif 'l1' in self.loss_fn:
                 # BCE + L1 loss
                 l1_loss = self.loss_fn['l1'](logits, train_labels)
@@ -296,9 +313,20 @@ class SupervisedModel(L.LightningModule):
             # Hard label 학습 시: labels와 비교
             loss_labels = labels
         
-        # Compute loss (validation에서는 BCE만 사용: 속도 및 안정성)
+        # Compute loss (validation에서는 Topo 제외, 나머지는 조합 유지)
         if isinstance(self.loss_fn, nn.ModuleDict):
-            loss = self.loss_fn['bce'](logits, loss_labels)
+            bce_loss = self.loss_fn['bce'](logits, loss_labels)
+            if 'l2' in self.loss_fn:
+                l2_loss = self.loss_fn['l2'](logits, loss_labels)
+                loss = bce_loss + self.l2_lambda * l2_loss
+            elif 'l1' in self.loss_fn:
+                l1_loss = self.loss_fn['l1'](logits, loss_labels)
+                loss = bce_loss + self.l1_lambda * l1_loss
+            elif 'huber' in self.loss_fn:
+                huber_loss = self.loss_fn['huber'](logits, loss_labels)
+                loss = bce_loss + self.huber_lambda * huber_loss
+            else:
+                loss = bce_loss
         else:
             loss = self.loss_fn(logits, loss_labels)
 
@@ -472,6 +500,7 @@ class SupervisedModel(L.LightningModule):
         soft_label: bool,
         l1_lambda: float,
         l2_lambda: float,
+        huber_lambda: float,
         topo_lambda: float,
         topo_size: int,
         topo_pers_thresh: float,
@@ -518,6 +547,12 @@ class SupervisedModel(L.LightningModule):
             return nn.ModuleDict({
                 'bce': SoftBCELoss(soft_label=soft_label),
                 'l2': L2Loss(soft_label=soft_label),
+            })
+        if loss_type == 'bce_huber':
+            self.huber_lambda = huber_lambda
+            return nn.ModuleDict({
+                'bce': SoftBCELoss(soft_label=soft_label),
+                'huber': HuberLoss(soft_label=soft_label),
             })
         if loss_type == 'bce_topo':
             if soft_label:

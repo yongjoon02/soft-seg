@@ -23,6 +23,7 @@ from .l1_loss import L1Loss
 from .l2_loss import L2Loss
 from .topo_loss import TopoLoss
 from .flow_matching_loss import FlowMatchingLoss
+from .huber_loss import HuberLoss
 
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     'L2Loss',
     'TopoLoss',
     'FlowMatchingLoss',
+    'HuberLoss',
 ]
 
 

@@ -5132,13 +5132,234 @@
     "git_branch": "main",
     "created_at": "2025-12-12T17:54:41.362954",
     "dir": "experiments/csnet/xca/csnet_xca_sauna_20251212_175441",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.11880974471569061,
+      "val/dice": 0.7274934649467468,
+      "val/iou": 0.8379228711128235,
+      "val/precision": 0.9238921403884888,
+      "val/recall": 0.8915703892707825,
+      "val/specificity": 0.8915703892707825,
+      "val/betti_0_error": 44.599998474121094,
+      "val/betti_1_error": 130.1999969482422,
+      "val/cldice": 0.7907810807228088
+    },
+    "best_checkpoint": "experiments/csnet/xca/csnet_xca_sauna_20251212_175441/checkpoints/best.ckpt",
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251216_142248": {
+    "id": "csnet_xca_sauna_20251216_142248",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0005,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 32,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T14:22:48.176965",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251216_142248",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.22646433115005493,
+      "val/dice": 0.7591288089752197,
+      "val/iou": 0.8529452085494995,
+      "val/precision": 0.912773609161377,
+      "val/recall": 0.9193118810653687,
+      "val/specificity": 0.9193118810653687,
+      "val/betti_0_error": 36.5,
+      "val/betti_1_error": 157.5,
+      "val/cldice": 0.8092535138130188
+    },
+    "best_checkpoint": "experiments/csnet/xca/csnet_xca_sauna_20251216_142248/checkpoints/best.ckpt",
+    "tag": "sauna"
+  },
+  "csnet_xca_smooth_20251216_145914": {
+    "id": "csnet_xca_smooth_20251216_145914",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "smooth",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_smooth"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T14:59:14.175951",
+    "dir": "experiments/csnet/xca/csnet_xca_smooth_20251216_145914",
     "status": "running",
     "final_metrics": null,
     "best_checkpoint": null,
-    "tag": "sauna"
+    "tag": "smooth"
   },
-  "csnet_xca_sauna_20251212_175627": {
-    "id": "csnet_xca_sauna_20251212_175627",
+  "csnet_xca_smooth_20251216_150454": {
+    "id": "csnet_xca_smooth_20251216_150454",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "smooth",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.005,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 32,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_smooth"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T15:04:54.452264",
+    "dir": "experiments/csnet/xca/csnet_xca_smooth_20251216_150454",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "smooth",
+    "error": "DataLoader worker (pid 3894303) is killed by signal: Terminated. "
+  },
+  "csnet_xca_smooth_20251216_151156": {
+    "id": "csnet_xca_smooth_20251216_151156",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "smooth",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.005,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 32,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_smooth"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T15:11:56.727211",
+    "dir": "experiments/csnet/xca/csnet_xca_smooth_20251216_151156",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "smooth"
+  },
+  "csnet_xca_sauna_20251216_151518": {
+    "id": "csnet_xca_sauna_20251216_151518",
     "model": "csnet",
     "dataset": "xca",
     "config": {
@@ -5150,8 +5371,179 @@
         "weight_decay": 1e-05,
         "num_classes": 2,
         "soft_label": true,
-        "loss_type": "bce_l2",
-        "l1_lambda": 0.2,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 64,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T15:15:18.696041",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251216_151518",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.22591310739517212,
+      "val/dice": 0.7259829044342041,
+      "val/iou": 0.8313959240913391,
+      "val/precision": 0.9151498079299927,
+      "val/recall": 0.8903628587722778,
+      "val/specificity": 0.8903628587722778,
+      "val/betti_0_error": 59.0,
+      "val/betti_1_error": 169.5,
+      "val/cldice": 0.7833646535873413
+    },
+    "best_checkpoint": "experiments/csnet/xca/csnet_xca_sauna_20251216_151518/checkpoints/best.ckpt",
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251216_160902": {
+    "id": "csnet_xca_sauna_20251216_160902",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 16
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T16:09:02.911349",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251216_160902",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251216_164147": {
+    "id": "csnet_xca_sauna_20251216_164147",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 16
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T16:41:47.414378",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251216_164147",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.21957287192344666,
+      "val/dice": 0.7327627539634705,
+      "val/iou": 0.8458804488182068,
+      "val/precision": 0.9106258153915405,
+      "val/recall": 0.9125548005104065,
+      "val/specificity": 0.9125548005104065,
+      "val/betti_0_error": 40.5,
+      "val/betti_1_error": 163.0,
+      "val/cldice": 0.8158178925514221
+    },
+    "best_checkpoint": "experiments/csnet/xca/csnet_xca_sauna_20251216_164147/checkpoints/best.ckpt",
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251216_193449": {
+    "id": "csnet_xca_sauna_20251216_193449",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
         "log_image_enabled": true,
         "log_image_names": [
           "0000.png",
@@ -5179,17 +5571,312 @@
         "gradient_clip_val": 1.0
       }
     },
-    "git_hash": "9a7da740605fb4fd74acdbdeecddd0b8015df2f7",
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
     "git_branch": "main",
-    "created_at": "2025-12-12T17:56:27.735613",
-    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251212_175627",
+    "created_at": "2025-12-16T19:34:49.898617",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251216_193449",
     "status": "running",
     "final_metrics": null,
     "best_checkpoint": null,
     "tag": "sauna"
   },
-  "csnet_xca_sauna_20251212_175656": {
-    "id": "csnet_xca_sauna_20251212_175656",
+  "csnet_xca_gaussian_20251216_193501": {
+    "id": "csnet_xca_gaussian_20251216_193501",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "gaussian",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_gaussian"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 16
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T19:35:01.695390",
+    "dir": "experiments/csnet/xca/csnet_xca_gaussian_20251216_193501",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "gaussian"
+  },
+  "csnet_xca_smooth_20251216_193516": {
+    "id": "csnet_xca_smooth_20251216_193516",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "smooth",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_smooth"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 16
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T19:35:16.444934",
+    "dir": "experiments/csnet/xca/csnet_xca_smooth_20251216_193516",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "smooth"
+  },
+  "csnet_xca_20251216_193531": {
+    "id": "csnet_xca_20251216_193531",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 16
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T19:35:31.817246",
+    "dir": "experiments/csnet/xca/csnet_xca_20251216_193531",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "csnet_xca_20251216_210722": {
+    "id": "csnet_xca_20251216_210722",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T21:07:22.057966",
+    "dir": "experiments/csnet/xca/csnet_xca_20251216_210722",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "csnet_xca_gaussian_20251216_210758": {
+    "id": "csnet_xca_gaussian_20251216_210758",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "gaussian",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_gaussian"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T21:07:58.491380",
+    "dir": "experiments/csnet/xca/csnet_xca_gaussian_20251216_210758",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "gaussian"
+  },
+  "csnet_xca_gaussian_20251216_210920": {
+    "id": "csnet_xca_gaussian_20251216_210920",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "gaussian",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_gaussian"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-16T21:09:20.409765",
+    "dir": "experiments/csnet/xca/csnet_xca_gaussian_20251216_210920",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "gaussian"
+  },
+  "csnet_xca_sauna_20251216_211311": {
+    "id": "csnet_xca_sauna_20251216_211311",
     "model": "csnet",
     "dataset": "xca",
     "config": {
@@ -5202,7 +5889,7 @@
         "num_classes": 2,
         "soft_label": true,
         "loss_type": "bce_l1",
-        "l1_lambda": 0.2,
+        "l1_lamda": 0.1,
         "log_image_enabled": true,
         "log_image_names": [
           "0000.png",
@@ -5230,10 +5917,804 @@
         "gradient_clip_val": 1.0
       }
     },
-    "git_hash": "9a7da740605fb4fd74acdbdeecddd0b8015df2f7",
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
     "git_branch": "main",
-    "created_at": "2025-12-12T17:56:57.000356",
-    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251212_175656",
+    "created_at": "2025-12-16T21:13:11.300196",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251216_211311",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.230625718832016,
+      "val/dice": 0.7594943046569824,
+      "val/iou": 0.849199652671814,
+      "val/precision": 0.9165033102035522,
+      "val/recall": 0.9098666906356812,
+      "val/specificity": 0.9098666906356812,
+      "val/betti_0_error": 30.5,
+      "val/betti_1_error": 124.9000015258789,
+      "val/cldice": 0.8065866231918335
+    },
+    "best_checkpoint": "experiments/csnet/xca/csnet_xca_sauna_20251216_211311/checkpoints/best.ckpt",
+    "tag": "sauna"
+  },
+  "csnet_xca_20251217_101702": {
+    "id": "csnet_xca_20251217_101702",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T10:17:02.466296",
+    "dir": "experiments/csnet/xca/csnet_xca_20251217_101702",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "csnet_xca_gaussian_20251217_101740": {
+    "id": "csnet_xca_gaussian_20251217_101740",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "gaussian",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_gaussian"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T10:17:40.473838",
+    "dir": "experiments/csnet/xca/csnet_xca_gaussian_20251217_101740",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "gaussian"
+  },
+  "csnet_xca_sauna_20251217_101826": {
+    "id": "csnet_xca_sauna_20251217_101826",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T10:18:26.874679",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_101826",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna"
+  },
+  "csnet_xca_smooth_20251217_101849": {
+    "id": "csnet_xca_smooth_20251217_101849",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "smooth",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_smooth"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T10:18:49.275519",
+    "dir": "experiments/csnet/xca/csnet_xca_smooth_20251217_101849",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.3581162393093109,
+      "val/dice": 0.7167302370071411,
+      "val/iou": 0.8293671607971191,
+      "val/precision": 0.9286381602287292,
+      "val/recall": 0.8763607144355774,
+      "val/specificity": 0.8763607144355774,
+      "val/betti_0_error": 50.599998474121094,
+      "val/betti_1_error": 137.60000610351562,
+      "val/cldice": 0.7620898485183716
+    },
+    "best_checkpoint": "experiments/csnet/xca/csnet_xca_smooth_20251217_101849/checkpoints/best.ckpt",
+    "tag": "smooth"
+  },
+  "csnet_xca_20251217_124900": {
+    "id": "csnet_xca_20251217_124900",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T12:49:00.346285",
+    "dir": "experiments/csnet/xca/csnet_xca_20251217_124900",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "csnet_xca_sauna_20251217_124902": {
+    "id": "csnet_xca_sauna_20251217_124902",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T12:49:02.596861",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_124902",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna"
+  },
+  "csnet_xca_smooth_20251217_125048": {
+    "id": "csnet_xca_smooth_20251217_125048",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "smooth",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_smooth"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T12:50:48.822275",
+    "dir": "experiments/csnet/xca/csnet_xca_smooth_20251217_125048",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "smooth"
+  },
+  "csnet_xca_sauna_20251217_132909": {
+    "id": "csnet_xca_sauna_20251217_132909",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce_l2",
+        "l2_lamda": 0.2,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T13:29:09.867468",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_132909",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251217_133003": {
+    "id": "csnet_xca_sauna_20251217_133003",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce_l2",
+        "l2_lamda": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T13:30:03.314660",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_133003",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna",
+    "error": "[Errno 2] No such file or directory: b'experiments/csnet/xca/csnet_xca_sauna_20251217_133003/tensorboard/events.out.tfevents.1765945828.tako.1253173.0'"
+  },
+  "csnet_xca_smooth_20251217_134741": {
+    "id": "csnet_xca_smooth_20251217_134741",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "smooth",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_smooth"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T13:47:41.444538",
+    "dir": "experiments/csnet/xca/csnet_xca_smooth_20251217_134741",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "smooth"
+  },
+  "csnet_xca_sauna_20251217_134919": {
+    "id": "csnet_xca_sauna_20251217_134919",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T13:49:19.566302",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_134919",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251217_135048": {
+    "id": "csnet_xca_sauna_20251217_135048",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce_l2",
+        "l2_lamda": 0.2,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T13:50:48.893144",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_135048",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251217_135141": {
+    "id": "csnet_xca_sauna_20251217_135141",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce_l2",
+        "l2_lamda": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T13:51:41.399693",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_135141",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251217_140339": {
+    "id": "csnet_xca_sauna_20251217_140339",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce_huber",
+        "l2_lamda": 0.2,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T14:03:39.460172",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_140339",
+    "status": "completed",
+    "final_metrics": {
+      "val/loss": 0.22803369164466858,
+      "val/dice": 0.7138620615005493,
+      "val/iou": 0.8147554397583008,
+      "val/precision": 0.8929651975631714,
+      "val/recall": 0.8893760442733765,
+      "val/specificity": 0.8893760442733765,
+      "val/betti_0_error": 81.5999984741211,
+      "val/betti_1_error": 157.8000030517578,
+      "val/cldice": 0.7649245262145996
+    },
+    "best_checkpoint": "experiments/csnet/xca/csnet_xca_sauna_20251217_140339/checkpoints/best.ckpt",
+    "tag": "sauna"
+  },
+  "csnet_xca_sauna_20251217_165243": {
+    "id": "csnet_xca_sauna_20251217_165243",
+    "model": "csnet",
+    "dataset": "xca",
+    "config": {
+      "tag": "sauna",
+      "model": {
+        "arch_name": "csnet",
+        "in_channels": 1,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "soft_label": true,
+        "loss_type": "bce_l1",
+        "l2_lamda": 0.1,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 8,
+        "label_subdir": "label_sauna"
+      },
+      "trainer": {
+        "max_epochs": 400,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "log_every_n_steps": 10,
+        "check_val_every_n_epoch": 20,
+        "gradient_clip_val": 1.0,
+        "accumulate_grad_batches": 4
+      }
+    },
+    "git_hash": "65a35e88b15d1226b4ff6c23aca84dba77caa5e0",
+    "git_branch": "main",
+    "created_at": "2025-12-17T16:52:43.550044",
+    "dir": "experiments/csnet/xca/csnet_xca_sauna_20251217_165243",
     "status": "running",
     "final_metrics": null,
     "best_checkpoint": null,

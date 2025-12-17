@@ -11,6 +11,7 @@ from lightning.pytorch.callbacks import (
     ModelCheckpoint,
     StochasticWeightAveraging,
 )
+from lightning.pytorch.tuner import Tuner
 
 from src.archs.diffusion_model import DiffusionModel
 from src.archs.supervised_model import SupervisedModel
@@ -60,12 +61,16 @@ class TrainRunner:
         self.tag = config.get('tag', None)
         self.resume = config.get('resume', None)
         self.debug = config.get('debug', False)
+        self.lr_find_mode = self.trainer_cfg.get('lr_find', False)
 
         # Create experiment tracker (only on main process)
         self.tracker = ExperimentTracker() if is_main_process() else None
 
     def run(self):
         """Execute training."""
+        if self.lr_find_mode:
+            return self._run_lr_find()
+
         # Only print info on main process
         if is_main_process():
             self._print_info()
@@ -144,6 +149,37 @@ class TrainRunner:
                 print(f"\n❌ Training failed: {e}")
                 self.tracker.mark_failed(self._experiment_id, str(e))
             raise
+
+    def _run_lr_find(self):
+        """Run Lightning LR finder and report suggested LR."""
+        if is_main_process():
+            print("\n🔍 Running LR finder (no training will be performed)...")
+
+        # Minimal setup (no experiment tracking/logging)
+        datamodule = self._create_datamodule()
+        model = self._create_model()
+
+        # Use temp dir for callbacks/checkpoints
+        tmp_dir = Path("lr_find_runs")
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        callbacks = self._create_callbacks(tmp_dir)
+        trainer = self._create_trainer(callbacks, logger=None)
+
+        tuner = Tuner(trainer)
+        lr_find_kwargs = {}
+        min_lr = self.trainer_cfg.get('lr_find_min_lr')
+        max_lr = self.trainer_cfg.get('lr_find_max_lr')
+        if min_lr is not None:
+            lr_find_kwargs['min_lr'] = min_lr
+        if max_lr is not None:
+            lr_find_kwargs['max_lr'] = max_lr
+        lr_finder = tuner.lr_find(model, datamodule=datamodule, **lr_find_kwargs)
+        suggested = lr_finder.suggestion()
+
+        if is_main_process():
+            print(f"\n✅ LR finder finished. Suggested LR: {suggested:.6f}")
+            print("Plot is available via lr_finder.plot(show=True/False) if needed.")
+        return suggested
 
     def _print_info(self):
         """Print training info."""
