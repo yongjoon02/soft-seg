@@ -8,8 +8,11 @@ model:
   weight_decay: 0.00001
   num_classes: 2
   soft_label: true
-  loss_type: bce_l1
-  l2_lamda: 0.1
+  loss_type: l2_dice_reg
+  params:
+      dice_lambda: 0.2      # λ
+      threshold: 0.5        # τ
+      dice_pred_mode: hard_ste  # hard / soft / hard_ste
   log_image_enabled: true
   log_image_names:
     - '0000.png'

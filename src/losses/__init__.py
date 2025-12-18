@@ -21,6 +21,7 @@ from .dice_loss import DiceLoss
 from .focal_dice_loss import FocalDiceLoss
 from .l1_loss import L1Loss
 from .l2_loss import L2Loss
+from .l2_dice_reg_loss import L2DiceRegLoss
 from .topo_loss import TopoLoss
 from .flow_matching_loss import FlowMatchingLoss
 from .huber_loss import HuberLoss
@@ -33,6 +34,7 @@ __all__ = [
     'FocalDiceLoss',
     'L1Loss',
     'L2Loss',
+    'L2DiceRegLoss',
     'TopoLoss',
     'FlowMatchingLoss',
     'HuberLoss',

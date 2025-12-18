@@ -3,15 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Import registry decorator (lazy import to avoid circular dependency)
-try:
-    from src.registry import register_loss
-except ImportError:
-    # Fallback if registry not available
-    def register_loss(*args, **kwargs):
-        def decorator(cls):
-            return cls
-        return decorator
+from src.registry.losses import register_loss
 
 
 @register_loss(
@@ -51,4 +43,3 @@ class SoftCrossEntropyLoss(nn.Module):
         log_probs = F.log_softmax(logits, dim=1)  # (B, C, H, W)
         loss = -torch.sum(soft_target * log_probs, dim=1)  # (B, H, W)
         return loss.mean()
-

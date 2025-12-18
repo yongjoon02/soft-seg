@@ -232,8 +232,9 @@ class TrainRunner:
             'arch_name': self.model_name,
             'learning_rate': self.model_cfg.get('learning_rate', self.model_info.default_lr),
             'weight_decay': self.model_cfg.get('weight_decay', 1e-5),
-            'experiment_name': f"{self.dataset_name}/{self.model_name}",
-            'data_name': self.dataset_name,
+            # Prefer explicit config values over inferred defaults.
+            'experiment_name': self.model_cfg.get('experiment_name', f"{self.dataset_name}/{self.model_name}"),
+            'data_name': self.model_cfg.get('data_name', self.dataset_name),
             'image_size': self.model_cfg.get('image_size', 224),
             'num_classes': self.model_cfg.get('num_classes', 2),
         }
@@ -260,7 +261,7 @@ class TrainRunner:
                 label_dim=self.model_cfg.get('label_dim', 0),
                 augment_dim=self.model_cfg.get('augment_dim', 0),
                 # Loss configuration
-                loss_type=self.model_cfg.get('loss_type', 'l1'),
+                loss_type=self.model_cfg.get('loss_type', 'l2'),
                 bce_weight=self.model_cfg.get('bce_weight', 0.5),
                 l2_weight=self.model_cfg.get('l2_weight', 0.1),
                 dice_weight=self.model_cfg.get('dice_weight', 0.2),
@@ -274,12 +275,43 @@ class TrainRunner:
             supervised_args['log_image_enabled'] = self.model_cfg.get('log_image_enabled', False)
             supervised_args['log_image_names'] = self.model_cfg.get('log_image_names', None)
             
-            # Soft label support: enable if label_subdir is specified (not 'label')
-            label_subdir = self.data_cfg.get('label_subdir', 'label')
-            supervised_args['soft_label'] = (label_subdir != 'label')
+            # Soft label support: prefer explicit model.soft_label, else infer from label_subdir.
+            if 'soft_label' in self.model_cfg:
+                supervised_args['soft_label'] = bool(self.model_cfg.get('soft_label'))
+            else:
+                label_subdir = self.data_cfg.get('label_subdir', 'label')
+                supervised_args['soft_label'] = (label_subdir != 'label')
             
-            # Loss type: 'ce' (default) or 'bce'
-            supervised_args['loss_type'] = self.model_cfg.get('loss_type', 'ce')
+            # Loss type: 'ce' (default) or registry name.
+            # For convenience, if loss_type matches a registered loss and no explicit
+            # `model.loss` block exists, treat it as registry-based loss config.
+            loss_type = self.model_cfg.get('loss_type', 'ce')
+            supervised_args['loss_type'] = loss_type
+            if 'loss' not in self.model_cfg:
+                try:
+                    # Ensure built-in losses are imported and registered.
+                    import src.losses  # noqa: F401
+                    from src.registry import LOSS_REGISTRY
+
+                    hardcoded_loss_types = {
+                        'ce',
+                        'bce',
+                        'l1',
+                        'l2',
+                        'bce_l1',
+                        'bce_l2',
+                        'bce_huber',
+                        'bce_topo',
+                    }
+                    params = self.model_cfg.get('params')
+                    if (
+                        isinstance(params, dict)
+                        and loss_type not in hardcoded_loss_types
+                        and loss_type in LOSS_REGISTRY
+                    ):
+                        supervised_args['loss'] = {'name': loss_type, 'params': params}
+                except Exception:
+                    pass
             # Optional: loss registry 사용
             if 'loss_name' in self.model_cfg:
                 supervised_args['loss_name'] = self.model_cfg['loss_name']

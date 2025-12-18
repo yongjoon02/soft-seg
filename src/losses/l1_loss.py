@@ -3,15 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Import registry decorator (lazy import to avoid circular dependency)
-try:
-    from src.registry import register_loss
-except ImportError:
-    # Fallback if registry not available
-    def register_loss(*args, **kwargs):
-        def decorator(cls):
-            return cls
-        return decorator
+from src.registry.losses import register_loss
 
 
 @register_loss(
@@ -58,4 +50,3 @@ class L1Loss(nn.Module):
         # L1 loss: |pred - target|
         loss = torch.abs(probs - labels_float)
         return loss.mean()
-

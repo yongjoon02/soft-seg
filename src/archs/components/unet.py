@@ -11,7 +11,7 @@ import autorootcwd
 import numpy as np
 import torch
 from torch.nn.functional import silu
-from src.registry import ARCHS_REGISTRY
+from src.registry.base import ARCHS_REGISTRY
 
 #----------------------------------------------------------------------------
 # Unified routine for initializing weights and biases.

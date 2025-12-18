@@ -3,15 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Import registry decorator (lazy import to avoid circular dependency)
-try:
-    from src.registry import register_loss
-except ImportError:
-    # Fallback if registry not available
-    def register_loss(*args, **kwargs):
-        def decorator(cls):
-            return cls
-        return decorator
+from src.registry.losses import register_loss
 
 
 @register_loss(
@@ -50,4 +42,3 @@ class SoftBCELoss(nn.Module):
         probs = torch.clamp(probs, eps, 1 - eps)
         loss = -(labels * torch.log(probs) + (1 - labels) * torch.log(1 - probs))
         return loss.mean()
-

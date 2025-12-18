@@ -106,6 +106,16 @@ class SupervisedModel(L.LightningModule):
             topo_pers_thresh_perfect=topo_pers_thresh_perfect,
         )
 
+        # Optional: allow custom losses to use hard labels as an additional signal
+        # (e.g., soft regression target + Dice regularizer to hard GT).
+        self._loss_accepts_hard_labels = False
+        if not isinstance(self.loss_fn, nn.ModuleDict):
+            try:
+                sig = inspect.signature(self.loss_fn.forward)
+                self._loss_accepts_hard_labels = 'hard_labels' in sig.parameters
+            except (TypeError, ValueError):
+                self._loss_accepts_hard_labels = False
+
         # Metrics
         self.val_metrics = MetricCollection({
             'dice': Dice(num_classes=num_classes, average='macro'),
@@ -266,7 +276,18 @@ class SupervisedModel(L.LightningModule):
                 loss = bce_loss
                 self.log('train/bce_loss', bce_loss, prog_bar=False)
         else:
-            loss = self.loss_fn(logits, train_labels)
+            if self._loss_accepts_hard_labels:
+                out = self.loss_fn(logits, train_labels, hard_labels=labels)
+            else:
+                out = self.loss_fn(logits, train_labels)
+
+            if isinstance(out, tuple) and len(out) == 2:
+                loss, loss_dict = out
+                if isinstance(loss_dict, dict):
+                    for name, value in loss_dict.items():
+                        self.log(f"train/{name}_loss", value, prog_bar=False)
+            else:
+                loss = out
             
             # Check final loss
             if torch.isnan(loss) or torch.isinf(loss):
@@ -328,7 +349,18 @@ class SupervisedModel(L.LightningModule):
             else:
                 loss = bce_loss
         else:
-            loss = self.loss_fn(logits, loss_labels)
+            if self._loss_accepts_hard_labels:
+                out = self.loss_fn(logits, loss_labels, hard_labels=labels)
+            else:
+                out = self.loss_fn(logits, loss_labels)
+
+            if isinstance(out, tuple) and len(out) == 2:
+                loss, loss_dict = out
+                if isinstance(loss_dict, dict):
+                    for name, value in loss_dict.items():
+                        self.log(f"val/{name}_loss", value, prog_bar=False)
+            else:
+                loss = out
 
         # Compute metrics
         preds = torch.argmax(logits, dim=1)
@@ -507,6 +539,9 @@ class SupervisedModel(L.LightningModule):
         topo_pers_thresh_perfect: float,
     ):
         """Construct loss. Registry 우선, 없으면 기존 분기 사용."""
+        # Ensure built-in losses are imported and registered in LOSS_REGISTRY.
+        import src.losses  # noqa: F401
+
         if loss_cfg:
             cfg_name = loss_cfg.get('name')
             cfg_params = loss_cfg.get('params', {})

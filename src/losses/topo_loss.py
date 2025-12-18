@@ -17,15 +17,7 @@ except ImportError:
     BettiMatchingLoss = None
     warnings.warn("topolosses is not installed. TopoLoss will not function. Install via `pip install topolosses`.")
 
-# Import registry decorator (lazy import to avoid circular dependency)
-try:
-    from src.registry import register_loss
-except ImportError:
-    # Fallback if registry not available
-    def register_loss(*args, **kwargs):
-        def decorator(cls):
-            return cls
-        return decorator
+from src.registry.losses import register_loss
 
 
 # Old gudhi-based implementation removed - using topolosses library instead
@@ -172,4 +164,3 @@ class TopoLoss(nn.Module):
             # Fallback to zero if computation fails
             warnings.warn(f"TopoLoss computation failed: {e}. Returning zero loss.")
             return torch.tensor(0.0, device=logits.device, dtype=logits.dtype, requires_grad=True)
-

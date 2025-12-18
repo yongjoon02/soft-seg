@@ -3,7 +3,8 @@ model:
   arch_name: dhariwal_concat_unet
   image_size: 320
   patch_plan:
-    - [320, 8]
+    # (patch_size, num_patches): num_patches가 배치를 곱절로 늘리므로 OOM 방지를 위해 1로 제한
+    - [320, 1]
   dim: 32
   timesteps: 30
   num_ensemble: 5
@@ -27,21 +28,13 @@ model:
   dropout: 0.0
   label_dim: 0
   augment_dim: 0
-  # Loss configuration (registry-based)
-  loss:
-    name: flow_matching
-    params:
-      scheme: l1_bce
-      weights:
-        l1: 1.0
-        bce: 0.5
 
 data:
   name: xca
   train_dir: data/xca_full/train
   val_dir: data/xca_full/val
   test_dir: data/xca_full/test
-  train_bs: 6  # DDP: 각 GPU당 1 → 총 6 GPU × 1 = 6
+  train_bs: 8  # DDP: 각 GPU당 1 → 총 6 GPU × 1 = 6
   image_size: 320
   num_samples_per_image: 4  # 메모리 최적화
 

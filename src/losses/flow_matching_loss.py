@@ -3,13 +3,7 @@
 import torch
 import torch.nn as nn
 
-try:
-    from src.registry import register_loss
-except ImportError:  # pragma: no cover - fallback for standalone use
-    def register_loss(*args, **kwargs):
-        def decorator(cls):
-            return cls
-        return decorator
+from src.registry.losses import register_loss
 
 
 @register_loss(
@@ -52,10 +46,17 @@ class FlowMatchingLoss(nn.Module):
                 components.append('l2')
             if use_dice:
                 components.append('dice')
+            # Default base term (when nothing specified): use l2 to match
+            # the standard flow-matching objective.
+            if not components:
+                components = ['l2']
 
-        # Ensure L1 is always present
-        if 'l1' not in components:
-            components.insert(0, 'l1')
+        # If scheme is explicitly provided, honor it as-is, but require a base
+        # matching term (l1 or l2) to avoid training with only regularizers.
+        if scheme and ('l1' not in components and 'l2' not in components):
+            raise ValueError(
+                f"Invalid flow_matching scheme '{scheme}': must include 'l1' or 'l2' base term."
+            )
 
         # Remove duplicates while preserving order
         seen = set()
@@ -64,7 +65,9 @@ class FlowMatchingLoss(nn.Module):
             if comp in self.VALID_COMPONENTS and comp not in seen:
                 seen.add(comp)
                 ordered_components.append(comp)
-        self.components = ordered_components or ['l1']
+        if not ordered_components:
+            raise ValueError(f"No valid loss components parsed from scheme='{scheme}'")
+        self.components = ordered_components
 
         # Setup weights (defaults + overrides)
         self.weights = {comp: 1.0 for comp in self.components}

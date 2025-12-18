@@ -371,6 +371,7 @@ class XCA_DataModule(XCADataModule):
         train_bs: int = 8,
         num_samples_per_image: int = 1,
         label_subdir: str = 'label',
+        use_sauna_transform: bool = False,
     ):
         super().__init__(
             train_dir=train_dir,
@@ -380,6 +381,7 @@ class XCA_DataModule(XCADataModule):
             train_bs=train_bs,
             num_samples_per_image=num_samples_per_image,
             label_subdir=label_subdir,
+            use_sauna_transform=use_sauna_transform,
         )
 
 

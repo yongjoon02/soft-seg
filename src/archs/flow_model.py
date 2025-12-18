@@ -1,16 +1,32 @@
 """Flow matching models for vessel segmentation."""
 import autorootcwd  # noqa: F401
 import torch
+import torch.nn as nn
+import torch.distributed as dist
 import lightning.pytorch as L
 from torchmetrics import MetricCollection
 from torchdiffeq import odeint
 
-from src.registry import ARCHS_REGISTRY
+from src.registry.base import ARCHS_REGISTRY
 from src.archs.components import unet  # noqa: F401 - Register architectures
 from src.archs.components.flow import SchrodingerBridgeConditionalFlowMatcher
 from src.metrics.general_metrics import Dice, Precision, Recall, Specificity, JaccardIndex
 from src.metrics.vessel_metrics import clDice, Betti0Error, Betti1Error
 from src.archs.components.utils import random_patch_batch, select_patch_params
+
+
+class _LossSummaryModule(nn.Module):
+    """Lightweight module to expose loss configuration in Lightning logs."""
+
+    def __init__(self, description: str) -> None:
+        super().__init__()
+        self.description = description
+
+    def forward(self, *args, **kwargs):  # pragma: no cover - not meant to be called
+        raise RuntimeError("Loss summary module is not callable.")
+
+    def extra_repr(self) -> str:
+        return self.description
 
 class FlowCoordModel(L.LightningModule):
     """Lightning module for coordinate-aware flow matching producing binary masks."""
@@ -359,33 +375,30 @@ class FlowCoordModel(L.LightningModule):
             # Only log if filename matches log_image_names (or log all if not specified)
             if log_names is None or filename in log_names:
                 print(f"[DEBUG] Logging image: {filename} at epoch {self.current_epoch}")
-                
-            img = (images[i] + 1) / 2
-            pred = preds[i].float().unsqueeze(0)
-            label = labels[i].float().unsqueeze(0)
-                
+                img = (images[i] + 1) / 2
+                pred = preds[i].float().unsqueeze(0)
+                label = labels[i].float().unsqueeze(0)
+
                 # Standard visualization: [image, label, pred]
-            vis_row = torch.cat([img, label, pred], dim=-1)
-                
-            self.logger.experiment.add_image(
+                vis_row = torch.cat([img, label, pred], dim=-1)
+                self.logger.experiment.add_image(
                     tag=f'{tag_prefix}/{filename}',
-                img_tensor=vis_row,
+                    img_tensor=vis_row,
                     global_step=self.global_step,
                 )
-                
+
                 # If geometry is provided (soft label), also log geometry comparison
-            if geometry is not None and output_geometry is not None:
+                if geometry is not None and output_geometry is not None:
                     geom = geometry[i].float().unsqueeze(0)
                     out_geom = output_geometry[i].float().unsqueeze(0)
-                    
+
                     # Geometry visualization: [image, target_geometry, output_geometry]
                     geom_vis_row = torch.cat([img, geom, out_geom], dim=-1)
-                    
                     self.logger.experiment.add_image(
                         tag=f'{tag_prefix}_geometry/{filename}',
                         img_tensor=geom_vis_row,
-                global_step=self.global_step,
-            )
+                        global_step=self.global_step,
+                    )
 
 
 class FlowModel(L.LightningModule):
@@ -417,7 +430,7 @@ class FlowModel(L.LightningModule):
         label_dim: int = 0,
         augment_dim: int = 0,
         # Loss configuration
-        loss_type: str = 'l1',  # 'l1', 'l1_bce', 'l1_l2', 'l1_bce_l2', 'l1_bce_dice'
+        loss_type: str = 'l2',  # 'l2', 'l2_bce', 'l2_l2', 'l2_bce_l2', 'l2_bce_dice' (also supports legacy 'l1*')
         bce_weight: float = 0.5,
         l2_weight: float = 0.1,
         dice_weight: float = 0.2,
@@ -495,6 +508,7 @@ class FlowModel(L.LightningModule):
             if loss_name not in LOSS_REGISTRY:
                 raise ValueError(f"Unknown loss: {loss_name}. Available: {LOSS_REGISTRY.keys()}")
             self.loss_fn = LOSS_REGISTRY.get(loss_name)(**loss_params)
+            self.loss_description = f"{loss_name}({loss_params})"
         else:
             self.loss_type = loss_type
             self.bce_weight = bce_weight
@@ -503,6 +517,13 @@ class FlowModel(L.LightningModule):
             if 'dice' in loss_type:
                 from src.losses import DiceLoss
                 self.dice_loss = DiceLoss()
+            self.loss_description = f"builtin:{loss_type}"
+
+        # Register lightweight summary module so logs show loss info.
+        self.loss_summary = _LossSummaryModule(self.loss_description)
+
+        # Buffer for distributed image logging (validation/test).
+        self._pending_image_logs: list[dict] = []
 
     def training_step(self, batch, batch_idx):
         images = batch['image']  # condition
@@ -541,18 +562,25 @@ class FlowModel(L.LightningModule):
     def _compute_loss(self, v, ut, xt, geometry, t):
         """Compute loss based on loss_type configuration."""
         losses = {}
-        
-        # L1 loss (always included, base flow matching loss)
-        l1_loss = torch.abs(v - ut).mean()
-        losses['l1'] = l1_loss
+
+        # Base flow matching loss:
+        # Default is L2(MSE) to match standard flow-matching objective.
+        # For backward compatibility, legacy 'l1*' loss_type keeps L1 base.
+        use_l1_base = isinstance(self.loss_type, str) and self.loss_type.startswith('l1')
+        if use_l1_base:
+            base_loss = torch.abs(v - ut).mean()
+            losses['l1'] = base_loss
+        else:
+            base_loss = ((v - ut) ** 2).mean()
+            losses['l2'] = base_loss
         
         # Additional losses based on loss_type
-        if self.loss_type == 'l1':
-            # Default: only L1 loss (existing behavior)
-            total_loss = l1_loss
+        if self.loss_type in {'l1', 'l2'}:
+            # Default: base loss only
+            total_loss = base_loss
         
-        elif self.loss_type == 'l1_bce':
-            # L1 + BCE (recommended for SAUNA soft labels)
+        elif self.loss_type in {'l1_bce', 'l2_bce'}:
+            # Base + BCE (recommended for SAUNA soft labels)
             # Compute output geometry from xt for BCE loss
             # Approximate output: xt at t=1 should be close to geometry
             # Use xt as proxy for output geometry (or compute from flow)
@@ -575,16 +603,17 @@ class FlowModel(L.LightningModule):
                         (1 - target_probs) * torch.log(1 - output_probs)).mean()
             losses['bce'] = bce_loss
             
-            total_loss = l1_loss + self.bce_weight * bce_loss
+            total_loss = base_loss + self.bce_weight * bce_loss
         
-        elif self.loss_type == 'l1_l2':
-            # L1 + L2 (smoothness)
+        elif self.loss_type in {'l1_l2', 'l2_l2'}:
+            # Base + additional L2 regularizer on (v - ut)
+            # (Kept for backward compatibility/tuning.)
             l2_loss = ((v - ut) ** 2).mean()
             losses['l2'] = l2_loss
-            total_loss = l1_loss + self.l2_weight * l2_loss
+            total_loss = base_loss + self.l2_weight * l2_loss
         
-        elif self.loss_type == 'l1_bce_l2':
-            # L1 + BCE + L2
+        elif self.loss_type in {'l1_bce_l2', 'l2_bce_l2'}:
+            # Base + BCE + additional L2 regularizer
             output_geometry = xt
             if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
                 output_geometry = output_geometry.squeeze(1)
@@ -604,10 +633,10 @@ class FlowModel(L.LightningModule):
             
             losses['bce'] = bce_loss
             losses['l2'] = l2_loss
-            total_loss = l1_loss + self.bce_weight * bce_loss + self.l2_weight * l2_loss
+            total_loss = base_loss + self.bce_weight * bce_loss + self.l2_weight * l2_loss
         
-        elif self.loss_type == 'l1_bce_dice':
-            # L1 + BCE + Dice
+        elif self.loss_type in {'l1_bce_dice', 'l2_bce_dice'}:
+            # Base + BCE + Dice
             output_geometry = xt
             if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
                 output_geometry = output_geometry.squeeze(1)
@@ -630,11 +659,11 @@ class FlowModel(L.LightningModule):
             
             losses['bce'] = bce_loss
             losses['dice'] = dice_loss
-            total_loss = l1_loss + self.bce_weight * bce_loss + self.dice_weight * dice_loss
+            total_loss = base_loss + self.bce_weight * bce_loss + self.dice_weight * dice_loss
         
         else:
-            # Unknown loss_type, fallback to L1
-            total_loss = l1_loss
+            # Unknown loss_type, fallback to base loss
+            total_loss = base_loss
         
         # Log individual losses
         for loss_name, loss_value in losses.items():
@@ -727,16 +756,21 @@ class FlowModel(L.LightningModule):
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True, sync_dist=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False, sync_dist=True)
         
-        # Log images: include geometry if soft labels are used (geometry != labels)
-        # Check if geometry is different from labels (soft label case)
-        use_soft_label = not torch.equal(geometry, labels.float())
-        if use_soft_label:
-            self._log_images(sample_names, images, labels, preds, tag_prefix='val', 
-                           geometry=geometry, output_geometry=output_geometry)
-        else:
-            self._log_images(sample_names, images, labels, preds, tag_prefix='val')
+        # Queue images for logging (handles DDP sharding safely).
+        self._queue_images_for_logging(
+            sample_names=sample_names,
+            images=images,
+            labels=labels,
+            preds=preds,
+            tag_prefix='val',
+            geometry=geometry,
+            output_geometry=output_geometry,
+        )
         
         return general_metrics['dice']
+
+    def on_validation_epoch_end(self):
+        self._flush_queued_images()
 
     def test_step(self, batch, batch_idx):
         images = batch['image']  # condition
@@ -850,12 +884,18 @@ class FlowModel(L.LightningModule):
 
 
 
-    def _log_images(self, sample_names, images, labels, preds, tag_prefix: str):
-        """Log images to TensorBoard similar to supervised model.
-        
-        Args:
-            preds: Binary predictions (B, H, W) with values {0, 1} (long tensor)
-        """
+    def _log_images(
+        self,
+        sample_names,
+        images,
+        labels,
+        preds,
+        tag_prefix: str,
+        geometry=None,
+        output_geometry=None,
+        **_,
+    ):
+        """Log a batch of images to TensorBoard (single-process helper)."""
         # Check if logging is enabled
         if not hasattr(self.hparams, 'log_image_enabled') or not self.hparams.log_image_enabled:
             return
@@ -868,27 +908,131 @@ class FlowModel(L.LightningModule):
         
         for i, name in enumerate(sample_names):
             filename = name.split('/')[-1] if '/' in name else name
-            
-            # Only log if filename matches log_image_names (or log all if not specified)
-            if log_names is None or filename in log_names:
-                print(f"[DEBUG] Logging image: {filename} at epoch {self.current_epoch}")
-                
-                # Normalize image to [0, 1]
-            img = (images[i] + 1) / 2
-                
-                # Ensure binary visualization: preds should be {0, 1}
-                # If preds is long, convert to float; if already float, binarize
-            if preds[i].dtype == torch.long:
-                pred = preds[i].float().unsqueeze(0)
-            else:
-                pred = preds[i].float().unsqueeze(0)
-                
-            label = labels[i].float().unsqueeze(0)
-                
-            vis_row = torch.cat([img, label, pred], dim=-1)
-                
-            self.logger.experiment.add_image(
-                    tag=f'{tag_prefix}/{filename}',
-                img_tensor=vis_row,
-                global_step=self.global_step,
+            if log_names is not None and filename not in log_names:
+                continue
+
+            self._log_one_image(
+                filename=filename,
+                image=images[i],
+                label=labels[i],
+                pred=preds[i],
+                tag_prefix=tag_prefix,
+                geometry=(geometry[i] if geometry is not None else None),
+                output_geometry=(output_geometry[i] if output_geometry is not None else None),
+            )
+
+    def _log_one_image(
+        self,
+        *,
+        filename: str,
+        image: torch.Tensor,
+        label: torch.Tensor,
+        pred: torch.Tensor,
+        tag_prefix: str,
+        geometry: torch.Tensor | None = None,
+        output_geometry: torch.Tensor | None = None,
+    ) -> None:
+        """Log a single sample with separate panels (readable in TensorBoard)."""
+        if not hasattr(self, 'logger') or self.logger is None or not hasattr(self.logger, 'experiment'):
+            return
+
+        def ensure_chw(x: torch.Tensor) -> torch.Tensor:
+            if x.dim() == 2:
+                return x.unsqueeze(0)
+            return x
+
+        img = ensure_chw((image + 1) / 2).clamp(0.0, 1.0)
+        lab = ensure_chw(label.float()).clamp(0.0, 1.0)
+        prd = ensure_chw(pred.float()).clamp(0.0, 1.0)
+
+        base = f"{tag_prefix}/{filename}"
+        self.logger.experiment.add_image(f"{base}/image", img, self.global_step)
+        self.logger.experiment.add_image(f"{base}/label", lab, self.global_step)
+        if geometry is not None:
+            geo = ensure_chw(geometry.float()).clamp(0.0, 1.0)
+            self.logger.experiment.add_image(f"{base}/geometry", geo, self.global_step)
+        if output_geometry is not None:
+            out_geo = ensure_chw(output_geometry.float()).clamp(0.0, 1.0)
+            self.logger.experiment.add_image(f"{base}/output_geometry", out_geo, self.global_step)
+        self.logger.experiment.add_image(f"{base}/pred", prd, self.global_step)
+
+    def _queue_images_for_logging(
+        self,
+        *,
+        sample_names,
+        images: torch.Tensor,
+        labels: torch.Tensor,
+        preds: torch.Tensor,
+        tag_prefix: str,
+        geometry: torch.Tensor | None = None,
+        output_geometry: torch.Tensor | None = None,
+    ) -> None:
+        """Queue selected images for logging; safe under DDP sharding."""
+        if not hasattr(self.hparams, 'log_image_enabled') or not self.hparams.log_image_enabled:
+            return
+
+        log_names = getattr(self.hparams, 'log_image_names', None)
+        if log_names is None:
+            return
+
+        for i, name in enumerate(sample_names):
+            filename = name.split('/')[-1] if '/' in name else name
+            if filename not in log_names:
+                continue
+
+            self._pending_image_logs.append(
+                {
+                    'tag_prefix': tag_prefix,
+                    'filename': filename,
+                    'image': images[i].detach().cpu(),
+                    'label': labels[i].detach().cpu(),
+                    'pred': preds[i].detach().cpu(),
+                    'geometry': (geometry[i].detach().cpu() if geometry is not None else None),
+                    'output_geometry': (output_geometry[i].detach().cpu() if output_geometry is not None else None),
+                }
+            )
+
+    def _flush_queued_images(self) -> None:
+        """Gather queued images across ranks and log them once on rank 0."""
+        if not self._pending_image_logs:
+            return
+
+        gathered: list[list[dict]] | None = None
+        if dist.is_available() and dist.is_initialized():
+            world_size = dist.get_world_size()
+            gathered = [None for _ in range(world_size)]
+            dist.all_gather_object(gathered, self._pending_image_logs)
+        else:
+            gathered = [self._pending_image_logs]
+
+        # Clear local buffer ASAP to avoid growth if something goes wrong later.
+        self._pending_image_logs = []
+
+        # Only log on rank 0 (logger exists only there in this runner).
+        if dist.is_available() and dist.is_initialized() and dist.get_rank() != 0:
+            return
+
+        if not hasattr(self, 'logger') or self.logger is None or not hasattr(self.logger, 'experiment'):
+            return
+
+        # Flatten and de-duplicate by filename (DDP may still duplicate in some setups).
+        flat: list[dict] = []
+        for part in gathered:
+            if part:
+                flat.extend(part)
+
+        seen = set()
+        for item in flat:
+            key = (item.get('tag_prefix'), item.get('filename'))
+            if key in seen:
+                continue
+            seen.add(key)
+            self._log_one_image(
+                filename=item['filename'],
+                image=item['image'],
+                label=item['label'],
+                pred=item['pred'],
+                tag_prefix=item['tag_prefix'],
+                geometry=item.get('geometry'),
+                output_geometry=item.get('output_geometry'),
             )
