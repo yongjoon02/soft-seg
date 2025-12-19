@@ -37,10 +37,9 @@ model:
   loss:
     name: flow_matching
     params:
-      scheme: l2_bce_dice
+      scheme: l2_l1geo
       weights:
-        bce: 0.5
-        dice: 0.2
+        l1geo: 0.1
 data:
   name: xca
   train_dir: data/xca_full/train

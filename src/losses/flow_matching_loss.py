@@ -20,7 +20,7 @@ class FlowMatchingLoss(nn.Module):
         use_bce/use_l2/use_dice & *_weight: legacy flags kept for backward compatibility
     """
 
-    VALID_COMPONENTS = {'l1', 'bce', 'l2', 'dice'}
+    VALID_COMPONENTS = {'l1', 'bce', 'l2', 'dice', 'l1geo'}
 
     def __init__(
         self,
@@ -130,6 +130,21 @@ class FlowMatchingLoss(nn.Module):
             l2_loss = ((v - ut) ** 2).mean()
             losses['l2'] = l2_loss
             total = total + self.weights.get('l2', 1.0) * l2_loss
+
+        if 'l1geo' in self.components:
+            output_geometry = xt
+            if output_geometry.dim() == 4 and output_geometry.shape[1] == 1:
+                output_geometry = output_geometry.squeeze(1)
+            if geometry.dim() == 4 and geometry.shape[1] == 1:
+                geometry_2d = geometry.squeeze(1)
+            else:
+                geometry_2d = geometry
+
+            output_probs = torch.clamp(output_geometry, 0.0, 1.0)
+            target_probs = torch.clamp(geometry_2d, 0.0, 1.0)
+            l1_geo_loss = torch.abs(output_probs - target_probs).mean()
+            losses['l1geo'] = l1_geo_loss
+            total = total + self.weights.get('l1geo', 1.0) * l1_geo_loss
 
         if 'dice' in self.components:
             output_geometry = xt
