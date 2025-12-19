@@ -7362,6 +7362,711 @@
     "git_branch": "main",
     "created_at": "2025-12-18T17:08:45.264349",
     "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251218_170845",
+    "status": "completed",
+    "final_metrics": {
+      "val/reconstruction_loss": 0.05907738208770752,
+      "val/dice": 0.7842645645141602,
+      "val/iou": 0.8606646656990051,
+      "val/precision": 0.9259817004203796,
+      "val/recall": 0.9163503646850586,
+      "val/specificity": 0.9163503646850586,
+      "val/betti_0_error": 61.25,
+      "val/betti_1_error": 145.35000610351562,
+      "val/cldice": 0.8225102424621582
+    },
+    "best_checkpoint": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251218_170845/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251219_092248": {
+    "id": "dhariwal_concat_unet_xca_20251219_092248",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T09:22:48.775738",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_092248",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "CUDA out of memory. Tried to allocate more than 1EB memory."
+  },
+  "dhariwal_concat_unet_xca_20251219_092536": {
+    "id": "dhariwal_concat_unet_xca_20251219_092536",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T09:25:36.601659",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_092536",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251219_093752": {
+    "id": "dhariwal_concat_unet_xca_20251219_093752",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T09:37:52.554392",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_093752",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251219_095244": {
+    "id": "dhariwal_concat_unet_xca_20251219_095244",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T09:52:44.688596",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_095244",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251219_104752": {
+    "id": "dhariwal_concat_unet_xca_20251219_104752",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T10:47:52.958481",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_104752",
+    "status": "completed",
+    "final_metrics": {
+      "val/reconstruction_loss": 0.06255309283733368,
+      "val/dice": 0.7765882611274719,
+      "val/iou": 0.8561502695083618,
+      "val/precision": 0.9165672063827515,
+      "val/recall": 0.9202269315719604,
+      "val/specificity": 0.9202269315719604,
+      "val/betti_0_error": 89.75,
+      "val/betti_1_error": 144.4499969482422,
+      "val/cldice": 0.8126791715621948
+    },
+    "best_checkpoint": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_104752/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251219_134642": {
+    "id": "dhariwal_concat_unet_xca_20251219_134642",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1_dice",
+            "weights": {
+              "l1": 1.0,
+              "dice": 0.2
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T13:46:42.352421",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_134642",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "index 1 is out of bounds for dimension 1 with size 1"
+  },
+  "dhariwal_concat_unet_xca_20251219_140129": {
+    "id": "dhariwal_concat_unet_xca_20251219_140129",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_reg_dice",
+          "params": {
+            "base": "l1",
+            "dice_lambda": 0.1,
+            "threshold": 0.5,
+            "dice_pred_mode": "hard_ste"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T14:01:29.615704",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_140129",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251219_142706": {
+    "id": "dhariwal_concat_unet_xca_20251219_142706",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2_bce_dice",
+            "weights": {
+              "bce": 0.5,
+              "dice": 0.2
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "c4a2c4ddba1f882a2bf46366c5deb8cdb7d513f7",
+    "git_branch": "main",
+    "created_at": "2025-12-19T14:27:06.832695",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_142706",
     "status": "running",
     "final_metrics": null,
     "best_checkpoint": null,

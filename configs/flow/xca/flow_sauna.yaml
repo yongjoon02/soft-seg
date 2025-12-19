@@ -13,7 +13,7 @@ model:
   num_classes: 2
   experiment_name: flow_model_sauna
   data_name: xca
-  log_image_enabled: true
+  log_image_enabled: false
   log_image_names:
     - '0000.png'
     - '0010.png'
@@ -31,10 +31,10 @@ model:
   loss:
     name: flow_matching
     params:
-      scheme: l1
+      scheme: l2_bce_dice
       weights:
-        l1: 1.0
-
+        bce: 0.5
+        dice: 0.2
 data:
   name: xca
   train_dir: data/xca_full/train

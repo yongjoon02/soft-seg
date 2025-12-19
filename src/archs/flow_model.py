@@ -755,6 +755,10 @@ class FlowModel(L.LightningModule):
         # Log (sync_dist for DDP)
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True, sync_dist=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False, sync_dist=True)
+
+        # Sanity check 단계에서는 이미지 로깅을 스킵해 불필요한 all_gather_object 오버헤드 제거
+        if getattr(self.trainer, "sanity_checking", False):
+            return general_metrics['dice']
         
         # Queue images for logging (handles DDP sharding safely).
         self._queue_images_for_logging(
