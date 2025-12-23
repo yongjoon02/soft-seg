@@ -8155,9 +8155,1078 @@
     "git_branch": "main",
     "created_at": "2025-12-19T14:36:26.362902",
     "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_143626",
+    "status": "completed",
+    "final_metrics": {
+      "val/reconstruction_loss": 0.06408663094043732,
+      "val/dice": 0.7612807154655457,
+      "val/iou": 0.8520716428756714,
+      "val/precision": 0.9198430776596069,
+      "val/recall": 0.9115574955940247,
+      "val/specificity": 0.9115574955940247,
+      "val/betti_0_error": 90.8499984741211,
+      "val/betti_1_error": 139.8000030517578,
+      "val/cldice": 0.8080930709838867
+    },
+    "best_checkpoint": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251219_143626/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "dhariwal_concat_unet_multihead_xca_20251222_132322": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251222_132322",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2_l1geo_head",
+            "t_threshold": 0.7,
+            "weights": {
+              "l1geo_head": 0.1
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-22T13:23:22.257954",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251222_132322",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "DhariwalConcatUNetMultiHead.__init__() got an unexpected keyword argument 'image_size'"
+  },
+  "dhariwal_concat_unet_multihead_xca_20251222_132440": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251222_132440",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2_l1geo_head",
+            "t_threshold": 0.7,
+            "weights": {
+              "l1geo_head": 0.1
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-22T13:24:40.062268",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251222_132440",
     "status": "running",
     "final_metrics": null,
     "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_multihead_xca_20251222_134257": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251222_134257",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1_l1geo_head",
+            "t_threshold": 0.7,
+            "weights": {
+              "l1geo_head": 0.1
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-22T13:42:57.287721",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251222_134257",
+    "status": "completed",
+    "final_metrics": {
+      "val/reconstruction_loss": 0.060864973813295364,
+      "val/dice": 0.761315107345581,
+      "val/iou": 0.857367992401123,
+      "val/precision": 0.9312076568603516,
+      "val/recall": 0.9076215624809265,
+      "val/specificity": 0.9076215624809265,
+      "val/betti_0_error": 55.25,
+      "val/betti_1_error": 138.0,
+      "val/cldice": 0.8119470477104187
+    },
+    "best_checkpoint": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251222_134257/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "dhariwal_concat_unet_multihead_xca_20251222_174933": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251222_174933",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1_l1geo_head",
+            "t_threshold": 0.8,
+            "weights": {
+              "l1geo_head": 0.05
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-22T17:49:33.481675",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251222_174933",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_multihead_xca_20251222_174956": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251222_174956",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1_l1geo_head",
+            "t_threshold": 0.8,
+            "weights": {
+              "l1geo_head": 0.05
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-22T17:49:56.055731",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251222_174956",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "DataLoader worker (pid 2590954) is killed by signal: Terminated. "
+  },
+  "dhariwal_concat_unet_multihead_xca_20251222_175205": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251222_175205",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1_l1geo_head",
+            "t_threshold": 0.8,
+            "weights": {
+              "l1geo_head": 0.02
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-22T17:52:05.849891",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251222_175205",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20251222_183009": {
+    "id": "medsegdiff_flow_xca_20251222_183009",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-22T18:30:09.364406",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20251222_183009",
+    "status": "completed",
+    "final_metrics": {
+      "val/reconstruction_loss": 0.06168574094772339,
+      "val/dice": 0.7585272192955017,
+      "val/iou": 0.8519283533096313,
+      "val/precision": 0.9197009801864624,
+      "val/recall": 0.9113218188285828,
+      "val/specificity": 0.9113218188285828,
+      "val/betti_0_error": 57.599998474121094,
+      "val/betti_1_error": 150.3000030517578,
+      "val/cldice": 0.808833122253418
+    },
+    "best_checkpoint": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20251222_183009/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251223_100522": {
+    "id": "dhariwal_concat_unet_xca_20251223_100522",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model",
+        "data_name": "xca",
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-23T10:05:22.333052",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251223_100522",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_multihead_xca_20251223_103155": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251223_103155",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1_l1geo_head",
+            "t_threshold": 0.95,
+            "weights": {
+              "l1geo_head": 0.01
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-23T10:31:55.893934",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251223_103155",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_xca_20251223_103911": {
+    "id": "dhariwal_concat_unet_xca_20251223_103911",
+    "model": "dhariwal_concat_unet",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-23T10:39:11.262281",
+    "dir": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251223_103911",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "dhariwal_concat_unet_multihead_xca_20251223_110814": {
+    "id": "dhariwal_concat_unet_multihead_xca_20251223_110814",
+    "model": "dhariwal_concat_unet_multihead",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "dhariwal_concat_unet_multihead",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l1_l1geo_head_bce_hard",
+            "t_threshold": 0.8,
+            "weights": {
+              "l1geo_head": 0.01,
+              "bce_hard": 0.1
+            }
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-23T11:08:14.392799",
+    "dir": "experiments/dhariwal_concat_unet_multihead/xca/dhariwal_concat_unet_multihead_xca_20251223_110814",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20251223_111536": {
+    "id": "medsegdiff_flow_xca_20251223_111536",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_matching",
+          "params": {
+            "scheme": "l2"
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "2bfa8ecea193f335454c1f907cbead8de8f6c3d6",
+    "git_branch": "main",
+    "created_at": "2025-12-23T11:15:36.039489",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20251223_111536",
+    "status": "completed",
+    "final_metrics": {
+      "val/reconstruction_loss": 0.06800879538059235,
+      "val/dice": 0.7353142499923706,
+      "val/iou": 0.8359659314155579,
+      "val/precision": 0.9111749529838562,
+      "val/recall": 0.8991805911064148,
+      "val/specificity": 0.8991805911064148,
+      "val/betti_0_error": 105.0999984741211,
+      "val/betti_1_error": 159.85000610351562,
+      "val/cldice": 0.787998378276825
+    },
+    "best_checkpoint": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20251223_111536/checkpoints/best.ckpt",
     "tag": null
   }
 }

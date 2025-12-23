@@ -451,8 +451,10 @@ class FlowModel(L.LightningModule):
         
         arch_class = ARCHS_REGISTRY.get(arch_name)
         
+        self.use_geometry_head = arch_name == 'dhariwal_concat_unet_multihead'
+
         # For dhariwal_concat_unet, need mask_channels and input_img_channels
-        if arch_name == 'dhariwal_concat_unet':
+        if arch_name in {'dhariwal_concat_unet', 'dhariwal_concat_unet_multihead'}:
             self.unet = arch_class(
                 img_resolution=image_size,
                 mask_channels=1,  # geometry output
@@ -529,6 +531,7 @@ class FlowModel(L.LightningModule):
         images = batch['image']  # condition
         # geometry: soft label/distance map 지원 (XCA에서는 geometry 없으면 label 사용)
         geometry = batch.get('geometry', batch.get('label'))  # target
+        labels = batch.get('label', geometry)
         
         patch_size, num_patches = select_patch_params(self.hparams.patch_plan)
         
@@ -536,19 +539,27 @@ class FlowModel(L.LightningModule):
         noise = torch.randn_like(geometry)
         
         # Random patch extraction
-        noise, geometry, images = random_patch_batch(
-            [noise, geometry, images], patch_size, num_patches
+        noise, geometry, images, labels = random_patch_batch(
+            [noise, geometry, images, labels], patch_size, num_patches
         )
         
         # Flow matching: x (noise) -> geometry
         t, xt, ut = self.flow_matcher.sample_location_and_conditional_flow(noise, geometry)
         
         # UNet forward: (x=xt, time=t, cond=images)
-        v = self.unet(xt, t, images)
+        unet_out = self.unet(xt, t, images)
+        if self.use_geometry_head:
+            v = unet_out[:, 0:1, :, :]
+            geometry_pred = unet_out[:, 1:2, :, :]
+        else:
+            v = unet_out
+            geometry_pred = None
         
         # Compute loss based on loss_type
         if self.use_registry_loss:
-            loss, loss_dict = self.loss_fn(v, ut, xt, geometry)
+            loss, loss_dict = self.loss_fn(
+                v, ut, xt, geometry, t=t, geometry_pred=geometry_pred, hard_labels=labels
+            )
             for name, value in loss_dict.items():
                 self.log(f'train/{name}_loss', value, prog_bar=False, sync_dist=True)
         else:
@@ -860,7 +871,10 @@ class FlowModel(L.LightningModule):
         images = self._sample_images
         
         # UNet forward: (x=noise, time=t, cond=images)
-        return self.unet(x, t, images)
+        unet_out = self.unet(x, t, images)
+        if self.use_geometry_head:
+            return unet_out[:, 0:1, :, :]
+        return unet_out
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(

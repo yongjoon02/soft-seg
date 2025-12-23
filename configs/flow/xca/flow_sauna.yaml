@@ -1,6 +1,6 @@
 # XCA 데이터셋 - Flow Matching 학습 설정 (SAUNA soft label)
 model:
-  arch_name: dhariwal_concat_unet
+  arch_name: dhariwal_concat_unet_multihead
   image_size: 320
   patch_plan:
     - [320, 1]
@@ -31,9 +31,11 @@ model:
   loss:
     name: flow_matching
     params:
-      scheme: l2_l1geo
+      scheme: l1_l1geo_head_bce_hard
+      t_threshold: 0.8
       weights:
-        l1geo: 0.1
+        l1geo_head: 0.01
+        bce_hard: 0.1
 data:
   name: xca
   train_dir: data/xca_full/train

@@ -239,9 +239,8 @@ class TrainRunner:
             'num_classes': self.model_cfg.get('num_classes', 2),
         }
 
-        # FlowModel 지원: arch_name이 flow 계열이면 FlowModel 사용
-        flow_archs = ['dhariwal_concat_unet', 'dhariwal_unet_4channel']
-        if self.model_name in flow_archs:
+        # FlowModel 지원: registry task가 flow이면 FlowModel 사용
+        if self.model_info.task == 'flow':
             from src.archs.flow_model import FlowModel
             return FlowModel(
                 **common_args,
