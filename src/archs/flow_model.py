@@ -545,6 +545,36 @@ class FlowModel(L.LightningModule):
         
         # Flow matching: x (noise) -> geometry
         t, xt, ut = self.flow_matcher.sample_location_and_conditional_flow(noise, geometry)
+
+        with torch.no_grad():
+            # Diagnostics: noise vs target scale and early-t visualization.
+            x1 = geometry
+            x0 = noise
+            x1_norm = torch.linalg.vector_norm(x1.flatten(1), dim=1)
+            x0_diff_norm = torch.linalg.vector_norm((x1 - x0).flatten(1), dim=1)
+            ratio = (x0_diff_norm / (x1_norm + 1e-8)).mean()
+            self.log('train/x1_x0_ratio', ratio, prog_bar=False, sync_dist=True)
+
+            diag_every = getattr(self.hparams, 'log_diag_every_n_steps', 200)
+            target_t = getattr(self.hparams, 'log_diag_t', 0.1)
+            if (
+                self.global_step % diag_every == 0
+                and hasattr(self, 'logger')
+                and self.logger is not None
+                and hasattr(self.logger, 'experiment')
+                and getattr(self.trainer, 'is_global_zero', True)
+            ):
+                idx = torch.argmin((t - target_t).abs()).item()
+                xt_img = xt[idx, 0:1].detach()
+                xt_min = xt_img.min()
+                xt_max = xt_img.max()
+                if (xt_max - xt_min) > 1e-6:
+                    xt_img = (xt_img - xt_min) / (xt_max - xt_min)
+                    self.logger.experiment.add_image(
+                        f'train/xt_t{target_t:.2f}',
+                        xt_img,
+                        global_step=self.global_step,
+                    )
         
         # UNet forward: (x=xt, time=t, cond=images)
         unet_out = self.unet(xt, t, images)

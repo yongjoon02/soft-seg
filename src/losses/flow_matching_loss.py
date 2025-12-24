@@ -40,7 +40,21 @@ class FlowMatchingLoss(nn.Module):
 
         # Determine active components
         if scheme:
-            components = [part for part in scheme.split('_') if part]
+            parts = [part for part in scheme.split('_') if part]
+            components = []
+            i = 0
+            while i < len(parts):
+                part = parts[i]
+                if part == 'l1geo' and i + 1 < len(parts) and parts[i + 1] == 'head':
+                    components.append('l1geo_head')
+                    i += 2
+                    continue
+                if part == 'bce' and i + 1 < len(parts) and parts[i + 1] == 'hard':
+                    components.append('bce_hard')
+                    i += 2
+                    continue
+                components.append(part)
+                i += 1
         else:
             components = []
             if use_bce:
