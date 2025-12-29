@@ -2,6 +2,7 @@
 import autorootcwd  # noqa: F401
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.distributed as dist
 import lightning.pytorch as L
 from torchmetrics import MetricCollection
@@ -536,7 +537,10 @@ class FlowModel(L.LightningModule):
         patch_size, num_patches = select_patch_params(self.hparams.patch_plan)
         
         # Prepare noise (x0) and target geometry
-        noise = torch.randn_like(geometry)
+        if not getattr(self.hparams, 'use_x0_mixing', False) or getattr(self.hparams, 'x0_policy', 'legacy') == 'legacy':
+            noise = torch.randn_like(geometry)
+        else:
+            noise = self.make_x0_mixed(geometry, 'train', self.global_step)
         
         # Random patch extraction
         noise, geometry, images, labels = random_patch_batch(
@@ -712,6 +716,71 @@ class FlowModel(L.LightningModule):
         
         return total_loss
 
+    def make_x0_mixed(self, x1: torch.Tensor, stage: str, global_step: int) -> torch.Tensor:
+        """Generate x0 by mixing near-start (blurred x1) and noise-start."""
+        p_start = float(getattr(self.hparams, 'x0_p_start', 0.8))
+        p_end = float(getattr(self.hparams, 'x0_p_end', 0.0))
+        decay_steps = float(getattr(self.hparams, 'x0_p_decay_steps', 50000))
+        x0_alpha = float(getattr(self.hparams, 'x0_alpha', 0.1))
+        x0_sigma = float(getattr(self.hparams, 'x0_sigma', 0.1))
+        blur_sigma = float(getattr(self.hparams, 'x0_blur_sigma', 4.0))
+
+        if decay_steps <= 0:
+            p = p_end
+        else:
+            progress = min(max(global_step / decay_steps, 0.0), 1.0)
+            p = p_end + (p_start - p_end) * (1.0 - progress)
+
+        if stage in {'val', 'test'} and getattr(self.hparams, 'debug_val_use_near_start', False):
+            p = 1.0
+
+        # Near-start: blur x1 then add small noise.
+        if blur_sigma > 0:
+            radius = int(torch.ceil(torch.tensor(3.0 * blur_sigma)).item())
+            kernel_size = radius * 2 + 1
+            device = x1.device
+            dtype = x1.dtype
+            coords = torch.arange(kernel_size, device=device, dtype=dtype) - radius
+            kernel_1d = torch.exp(-(coords ** 2) / (2 * blur_sigma ** 2))
+            kernel_1d = kernel_1d / kernel_1d.sum()
+            kernel_x = kernel_1d.view(1, 1, 1, kernel_size)
+            kernel_y = kernel_1d.view(1, 1, kernel_size, 1)
+            channels = x1.shape[1]
+            kernel_x = kernel_x.repeat(channels, 1, 1, 1)
+            kernel_y = kernel_y.repeat(channels, 1, 1, 1)
+            padding = (radius, radius, radius, radius)
+            blurred = F.pad(x1, padding, mode='reflect')
+            blurred = F.conv2d(blurred, kernel_x, groups=channels)
+            blurred = F.conv2d(blurred, kernel_y, groups=channels)
+        else:
+            blurred = x1
+        near = blurred + x0_alpha * torch.randn_like(x1)
+
+        # Noise-start: pure Gaussian noise.
+        noise = x0_sigma * torch.randn_like(x1)
+
+        # Sample mixing mask per sample.
+        if p <= 0:
+            x0 = noise
+            near_rate = 0.0
+        elif p >= 1:
+            x0 = near
+            near_rate = 1.0
+        else:
+            mask = (torch.rand(x1.shape[0], device=x1.device) < p).float().view(-1, 1, 1, 1)
+            x0 = mask * near + (1 - mask) * noise
+            near_rate = mask.mean().item()
+
+        if getattr(self.hparams, 'use_x0_mixing', False):
+            self.log(f'{stage}/x0_near_rate', near_rate, prog_bar=False, sync_dist=True)
+            self.log(f'{stage}/x0_mean', x0.mean(), prog_bar=False, sync_dist=True)
+            self.log(f'{stage}/x0_std', x0.std(), prog_bar=False, sync_dist=True)
+            self.log(f'{stage}/x1_mean', x1.mean(), prog_bar=False, sync_dist=True)
+            self.log(f'{stage}/x1_std', x1.std(), prog_bar=False, sync_dist=True)
+
+        return x0
+
+
     def sample(self, noise, images, return_intermediate: bool = False, save_steps: list = None):
         """Sample from flow matching model (inference).
         
@@ -766,14 +835,20 @@ class FlowModel(L.LightningModule):
         if self.hparams.num_ensemble > 1:
             output_geometry_list = []
             for _ in range(self.hparams.num_ensemble):
-                noise = torch.randn_like(geometry)
+                if not getattr(self.hparams, 'use_x0_mixing', False) or getattr(self.hparams, 'x0_policy', 'legacy') == 'legacy':
+                    noise = torch.randn_like(geometry)
+                else:
+                    noise = self.make_x0_mixed(geometry, 'val', self.global_step)
                 saved_steps, output_geometry = self.sample(noise, images, return_intermediate=True)
                 output_geometry_list.append(output_geometry)
             # Average predictions
             output_geometry = torch.stack(output_geometry_list).mean(dim=0)
         else:
             # Single sampling
-            noise = torch.randn_like(geometry)
+            if not getattr(self.hparams, 'use_x0_mixing', False) or getattr(self.hparams, 'x0_policy', 'legacy') == 'legacy':
+                noise = torch.randn_like(geometry)
+            else:
+                noise = self.make_x0_mixed(geometry, 'val', self.global_step)
             saved_steps, output_geometry = self.sample(noise, images, return_intermediate=True)
         
         # Compute reconstruction loss (final generation quality)
@@ -837,7 +912,10 @@ class FlowModel(L.LightningModule):
         if self.hparams.num_ensemble > 1:
             output_geometry_list = []
             for _ in range(self.hparams.num_ensemble):
-                noise = torch.randn_like(noise)
+                if not getattr(self.hparams, 'use_x0_mixing', False) or getattr(self.hparams, 'x0_policy', 'legacy') == 'legacy':
+                    noise = torch.randn_like(noise)
+                else:
+                    noise = self.make_x0_mixed(noise, 'test', self.global_step)
                 output_geometry = self.sample(noise, images)
                 output_geometry_list.append(output_geometry)
             # Average predictions

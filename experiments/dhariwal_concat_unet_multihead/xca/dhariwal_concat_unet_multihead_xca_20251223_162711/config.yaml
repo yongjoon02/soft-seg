@@ -38,10 +38,10 @@ model:
     name: flow_matching
     params:
       scheme: l1_l1geo_head_bce_hard
-      t_threshold: 0.95
+      t_threshold: 0.8
       weights:
         l1geo_head: 0.01
-        bce_hard: 0.3
+        bce_hard: 0.1
 data:
   name: xca
   train_dir: data/xca_full/train

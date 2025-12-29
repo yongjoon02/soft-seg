@@ -1,0 +1,74 @@
+model:
+  arch_name: dhariwal_concat_unet_multihead
+  image_size: 320
+  patch_plan:
+  - - 320
+    - 1
+  dim: 32
+  timesteps: 30
+  num_ensemble: 5
+  sigma: 0.25
+  learning_rate: 0.0002
+  weight_decay: 1.0e-05
+  num_classes: 2
+  experiment_name: flow_model_sauna
+  data_name: xca
+  log_image_enabled: false
+  log_image_names:
+  - 0000.png
+  - 0010.png
+  - 0019.png
+  model_channels: 32
+  channel_mult:
+  - 1
+  - 2
+  - 4
+  - 8
+  channel_mult_emb: 4
+  num_blocks: 3
+  attn_resolutions:
+  - 16
+  - 16
+  - 8
+  - 8
+  dropout: 0.0
+  label_dim: 0
+  augment_dim: 0
+  loss:
+    name: flow_matching
+    params:
+      scheme: l1_l1geo_head
+      t_threshold: 0.8
+      weights:
+        l1geo_head: 0.05
+  use_x0_mixing: false
+  x0_policy: mixed
+  x0_alpha: 0.1
+  x0_sigma: 0.1
+  x0_blur_sigma: 4.0
+  x0_p_start: 0.8
+  x0_p_end: 0.0
+  x0_p_decay_steps: 1500
+  debug_val_use_near_start: false
+data:
+  name: xca
+  train_dir: data/xca_full/train
+  val_dir: data/xca_full/val
+  test_dir: data/xca_full/test
+  train_bs: 8
+  image_size: 320
+  num_samples_per_image: 4
+  use_sauna_transform: true
+trainer:
+  max_epochs: 500
+  accelerator: gpu
+  devices: 1
+  precision: 16-mixed
+  enable_progress_bar: false
+  check_val_every_n_epoch: 25
+  log_every_n_steps: 5
+  accumulate_grad_batches: 8
+  gradient_clip_val: 1.0
+
+
+#multi head, geometry head 
