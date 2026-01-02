@@ -33,7 +33,7 @@ model:
     params:
       scheme: l1
 
-  # Optional x0 mixing (off by default)
+  # x0=0 start (noise comes only from sigma_t in the flow matcher)
 use_x0_mixing: true
 x0_policy: mixed
 x0_p_start: 0.0
@@ -48,7 +48,7 @@ data:
   train_bs: 8  # DDP: 각 GPU당 1 → 총 6 GPU × 1 = 6
   image_size: 320
   num_samples_per_image: 4  # 메모리 최적화
-  use_sauna_transform: true  # Enable SAUNA dynamic transformation
+  use_sauna_transform: false  # Enable SAUNA dynamic transformation
 
 trainer:
 
@@ -61,4 +61,3 @@ trainer:
   log_every_n_steps: 5
   accumulate_grad_batches: 8  # 실효 배치: 6 GPU × 1 × 8 = 48
   gradient_clip_val: 1.0
-
