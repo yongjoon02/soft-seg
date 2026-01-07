@@ -29,16 +29,20 @@ model:
   augment_dim: 0
   # Loss configuration (flow matching base only; single-head model)
   loss:
-    name: flow_matching
+    name: flow_sauna_fm
     params:
-      scheme: l2
-
+      alpha: 2.0
+      lambda_geo: 0.001
+      use_hard_ut: true
+      dice_scale: 0.1  # Reduce Dice gradient magnitude to match Flow (10x → 1x)
+  # PCGrad: Gradient Surgery for resolving loss conflicts
+  use_pcgrad: true
 data:
   name: xca
   train_dir: data/xca_full/train
   val_dir: data/xca_full/val
   test_dir: data/xca_full/test
-  train_bs: 8  # DDP: 각 GPU당 1 → 총 6 GPU × 1 = 6
+  train_bs: 6  # DDP: 각 GPU당 1 → 총 6 GPU × 1 = 6
   image_size: 320
   num_samples_per_image: 4  # 메모리 최적화
   use_sauna_transform: true  # Enable SAUNA dynamic transformation
@@ -47,8 +51,8 @@ trainer:
   max_epochs: 500
   accelerator: gpu
   devices: 1
-  precision: 16-mixed
-  enable_progress_bar: false
+  precision: 32-true
+  enable_progress_bar: true
   check_val_every_n_epoch: 25
   accumulate_grad_batches: 8  # 실효 배치: 6 GPU × 1 × 8 = 48
   gradient_clip_val: 1.0

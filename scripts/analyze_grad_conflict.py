@@ -52,6 +52,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Output directory for TensorBoard logs (default: <experiment>/grad_analysis)",
     )
+    parser.add_argument(
+        "--components",
+        default=None,
+        help="Comma-separated loss components to analyze (default: auto-detect).",
+    )
     return parser.parse_args()
 
 
@@ -137,7 +142,6 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir=str(output_dir))
 
-    components = ["l1", "l1geo_head", "bce_hard"]
     unet_params = list(model.unet.parameters())
 
     step = 0
@@ -149,12 +153,28 @@ def main() -> None:
         noise = torch.randn_like(geometry)
         t, xt, ut = model.flow_matcher.sample_location_and_conditional_flow(noise, geometry)
         unet_out = model.unet(xt, t, images)
-        v = unet_out[:, 0:1, :, :]
-        geometry_pred = unet_out[:, 1:2, :, :]
+        if unet_out.shape[1] >= 2:
+            v = unet_out[:, 0:1, :, :]
+            geometry_pred = unet_out[:, 1:2, :, :]
+        else:
+            v = unet_out
+            geometry_pred = None
 
         loss, loss_dict = model.loss_fn(
-            v, ut, xt, geometry, t=t, geometry_pred=geometry_pred, hard_labels=labels
+            v,
+            ut,
+            xt,
+            geometry,
+            t=t,
+            geometry_pred=geometry_pred,
+            hard_labels=labels,
+            x0=noise,
         )
+
+        if args.components:
+            components = [c.strip() for c in args.components.split(",") if c.strip()]
+        else:
+            components = list(loss_dict.keys())
 
         grad_map = {}
         for name in components:
@@ -168,21 +188,26 @@ def main() -> None:
             grad_map[name] = vec
             writer.add_scalar(f"grad_norm/{name}", vec.norm().item(), step)
 
-        if "l1" in grad_map and "l1geo_head" in grad_map:
+        if "flow" in grad_map and "bce" in grad_map:
             cos = torch.nn.functional.cosine_similarity(
-                grad_map["l1"], grad_map["l1geo_head"], dim=0
+                grad_map["flow"], grad_map["bce"], dim=0
             ).item()
-            writer.add_scalar("grad_cos/l1_vs_l1geo_head", cos, step)
-        if "l1" in grad_map and "bce_hard" in grad_map:
+            writer.add_scalar("grad_cos/flow_vs_bce", cos, step)
+        if "flow" in grad_map and "dice" in grad_map:
             cos = torch.nn.functional.cosine_similarity(
-                grad_map["l1"], grad_map["bce_hard"], dim=0
+                grad_map["flow"], grad_map["dice"], dim=0
             ).item()
-            writer.add_scalar("grad_cos/l1_vs_bce_hard", cos, step)
-        if "l1geo_head" in grad_map and "bce_hard" in grad_map:
+            writer.add_scalar("grad_cos/flow_vs_dice", cos, step)
+        if "flow" in grad_map and "l1geo_head" in grad_map:
             cos = torch.nn.functional.cosine_similarity(
-                grad_map["l1geo_head"], grad_map["bce_hard"], dim=0
+                grad_map["flow"], grad_map["l1geo_head"], dim=0
             ).item()
-            writer.add_scalar("grad_cos/l1geo_head_vs_bce_hard", cos, step)
+            writer.add_scalar("grad_cos/flow_vs_l1geo_head", cos, step)
+        if "flow" in grad_map and "bce_hard" in grad_map:
+            cos = torch.nn.functional.cosine_similarity(
+                grad_map["flow"], grad_map["bce_hard"], dim=0
+            ).item()
+            writer.add_scalar("grad_cos/flow_vs_bce_hard", cos, step)
 
         writer.add_scalar("loss/total", loss.item(), step)
         step += 1

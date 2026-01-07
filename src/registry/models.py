@@ -121,8 +121,10 @@ def _register_builtin_models():
     from src.archs.components import CSNet, DSCNet
     from src.archs.components.unet import DhariwalConcatUNet, DhariwalConcatUNetMultiHead
     from src.archs.components.medsegdiff_flow import MedSegDiffFlow
+    from src.archs.components.medsegdiff_flow_multitask import MedSegDiffFlowMultiTask
+    from src.archs.components.segdiff_flow import SegDiffFlow
     from src.archs.components.binomial_diffusion import create_berdiff
-    from src.archs.components.gaussian_diffusion import create_medsegdiff
+    from src.archs.components.gaussian_diffusion import create_medsegdiff, create_segdiff
     
     # CSNet
     if 'csnet' not in MODEL_REGISTRY:
@@ -171,7 +173,23 @@ def _register_builtin_models():
                 'default_epochs': 500,
             }
         )
-    
+
+    # SegDiff
+    if 'segdiff' not in MODEL_REGISTRY:
+        MODEL_REGISTRY.register(
+            name='segdiff',
+            obj=create_segdiff,
+            metadata={
+                'task': 'diffusion',
+                'params': 16_000_000,
+                'speed': 'slow',
+                'description': 'SegDiff with RRDB conditioning (Gaussian DDPM)',
+                'paper_url': None,
+                'default_lr': 2e-4,
+                'default_epochs': 500,
+            }
+        )
+
     # BerDiff
     if 'berdiff' not in MODEL_REGISTRY:
         MODEL_REGISTRY.register(
@@ -230,6 +248,55 @@ def _register_builtin_models():
                 'params': 25_000_000,
                 'speed': 'slow',
                 'description': 'MedSegDiff UNet backbone for flow matching (flow head only)',
+                'paper_url': None,
+                'default_lr': 2e-4,
+                'default_epochs': 500,
+            }
+        )
+
+    # MedSegDiff Flow soft-to-hard (Flow)
+    if 'medsegdiff_flow_soft2hard' not in MODEL_REGISTRY:
+        from src.archs.flow_soft2hard_model import FlowSoft2HardModel
+        MODEL_REGISTRY.register(
+            name='medsegdiff_flow_soft2hard',
+            obj=FlowSoft2HardModel,
+            metadata={
+                'task': 'flow',
+                'params': 30_000_000,
+                'speed': 'slow',
+                'description': 'MedSegDiff flow with dual-channel soft2hard coupling',
+                'paper_url': None,
+                'default_lr': 2e-4,
+                'default_epochs': 500,
+            }
+        )
+
+    # MedSegDiff Flow multi-task (Flow)
+    if 'medsegdiff_flow_multitask' not in MODEL_REGISTRY:
+        MODEL_REGISTRY.register(
+            name='medsegdiff_flow_multitask',
+            obj=MedSegDiffFlowMultiTask,
+            metadata={
+                'task': 'flow',
+                'params': 30_000_000,
+                'speed': 'slow',
+                'description': 'MedSegDiff flow with dual heads (hard+soft) multi-task',
+                'paper_url': None,
+                'default_lr': 2e-4,
+                'default_epochs': 500,
+            }
+        )
+
+    # SegDiff Flow backbone (Flow)
+    if 'segdiff_flow' not in MODEL_REGISTRY:
+        MODEL_REGISTRY.register(
+            name='segdiff_flow',
+            obj=SegDiffFlow,
+            metadata={
+                'task': 'flow',
+                'params': 25_000_000,
+                'speed': 'slow',
+                'description': 'SegDiff UNet backbone for flow matching (flow head only)',
                 'paper_url': None,
                 'default_lr': 2e-4,
                 'default_epochs': 500,

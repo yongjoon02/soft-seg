@@ -168,16 +168,21 @@ class EvalRunner:
         print(f"   Checkpoint: {checkpoint_path}")
 
         try:
-            # Load model based on task type
-            if model_info.task == 'supervised':
-                from src.archs.supervised_model import SupervisedModel
-                model = SupervisedModel.load_from_checkpoint(str(checkpoint_path))
-            elif model_info.task == 'flow':
-                from src.archs.flow_model import FlowModel
-                model = FlowModel.load_from_checkpoint(str(checkpoint_path))
-            else:  # diffusion
-                from src.archs.diffusion_model import DiffusionModel
-                model = DiffusionModel.load_from_checkpoint(str(checkpoint_path))
+            # Load model using registry class for task-agnostic evaluation.
+            model_cls = model_info.class_ref
+            if hasattr(model_cls, "load_from_checkpoint"):
+                model = model_cls.load_from_checkpoint(str(checkpoint_path))
+            else:
+                # Fallback to legacy task-based loading.
+                if model_info.task == 'supervised':
+                    from src.archs.supervised_model import SupervisedModel
+                    model = SupervisedModel.load_from_checkpoint(str(checkpoint_path))
+                elif model_info.task == 'flow':
+                    from src.archs.flow_model import FlowModel
+                    model = FlowModel.load_from_checkpoint(str(checkpoint_path))
+                else:  # diffusion
+                    from src.archs.diffusion_model import DiffusionModel
+                    model = DiffusionModel.load_from_checkpoint(str(checkpoint_path))
 
             # Extract label_subdir from checkpoint config if available
             label_subdir = None

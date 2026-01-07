@@ -1,0 +1,54 @@
+# XCA 데이터셋 - Flow Matching (MedSegDiff soft2hard, SAUNA soft label)
+model:
+  arch_name: medsegdiff_flow_soft2hard
+  image_size: 320
+  patch_plan:
+    - [320, 1]
+  dim: 32
+  timesteps: 30
+  num_ensemble: 5
+  sigma: 0.25
+  learning_rate: 0.0002
+  weight_decay: 0.00001
+  num_classes: 2
+  experiment_name: flow_model_sauna_medsegdiff_soft2hard
+  data_name: xca
+  log_image_enabled: false
+  log_image_names:
+    - '0000.png'
+    - '0010.png'
+    - '0019.png'
+  # UNet architecture parameters (mapped to MedSegDiff backbone)
+  model_channels: 32
+  channel_mult: [1, 2, 4, 8]
+  channel_mult_emb: 4
+  num_blocks: 3
+  attn_resolutions: [16, 16, 8, 8]
+  dropout: 0.0
+  label_dim: 0
+  augment_dim: 0
+  # Soft2Hard loss weights
+  flow_weight: 1.0
+  hard_weight: 1.0
+  soft_weight: 0.2
+  soft2hard_weight: 0.1
+  soft_sharpness: 10.0
+data:
+  name: xca
+  train_dir: data/xca_full/train
+  val_dir: data/xca_full/val
+  test_dir: data/xca_full/test
+  train_bs: 8
+  image_size: 320
+  num_samples_per_image: 4
+  use_sauna_transform: true
+
+trainer:
+  max_epochs: 500
+  accelerator: gpu
+  devices: 1
+  precision: 16-mixed
+  enable_progress_bar: true
+  check_val_every_n_epoch: 25
+  accumulate_grad_batches: 8
+  gradient_clip_val: 1.0

@@ -23,7 +23,9 @@ class OCTADataModule(BaseOCTDataModule):
             self.train_dir,
             augmentation=True,
             crop_size=self.crop_size,
-            num_samples_per_image=self.num_samples_per_image
+            num_samples_per_image=self.num_samples_per_image,
+            use_sliding_window=False,
+            sliding_window_overlap=self.sliding_window_overlap,
         )
 
 
@@ -31,20 +33,28 @@ class OCTADataModule(BaseOCTDataModule):
 class OCTA500_3M_DataModule(OCTADataModule):
     """OCTA500 3mm DataModule"""
     def __init__(self, train_dir="data/OCTA500_3M/train", val_dir="data/OCTA500_3M/val",
-                 test_dir="data/OCTA500_3M/test", crop_size=128, train_bs=8, num_samples_per_image=1):
+                 test_dir="data/OCTA500_3M/test", crop_size=128, train_bs=8, num_samples_per_image=1,
+                 use_sliding_window: bool = False, sliding_window_overlap: float = 0.25):
         super().__init__(train_dir=train_dir, val_dir=val_dir, test_dir=test_dir,
                         crop_size=crop_size, train_bs=train_bs,
-                        num_samples_per_image=num_samples_per_image, name='octa500_3m')
+                        num_samples_per_image=num_samples_per_image,
+                        use_sliding_window=use_sliding_window,
+                        sliding_window_overlap=sliding_window_overlap,
+                        name='octa500_3m')
 
 
 @DATASET_REGISTRY.register(name='octa500_6m')
 class OCTA500_6M_DataModule(OCTADataModule):
     """OCTA500 6mm DataModule"""
     def __init__(self, train_dir="data/OCTA500_6M/train", val_dir="data/OCTA500_6M/val",
-                 test_dir="data/OCTA500_6M/test", crop_size=128, train_bs=8, num_samples_per_image=1):
+                 test_dir="data/OCTA500_6M/test", crop_size=128, train_bs=8, num_samples_per_image=1,
+                 use_sliding_window: bool = False, sliding_window_overlap: float = 0.25):
         super().__init__(train_dir=train_dir, val_dir=val_dir, test_dir=test_dir,
                         crop_size=crop_size, train_bs=train_bs,
-                        num_samples_per_image=num_samples_per_image, name='octa500_6m')
+                        num_samples_per_image=num_samples_per_image,
+                        use_sliding_window=use_sliding_window,
+                        sliding_window_overlap=sliding_window_overlap,
+                        name='octa500_6m')
 
 
 if __name__ == "__main__":

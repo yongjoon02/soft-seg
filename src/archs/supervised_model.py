@@ -116,22 +116,20 @@ class SupervisedModel(L.LightningModule):
             except (TypeError, ValueError):
                 self._loss_accepts_hard_labels = False
 
-        # Metrics
+        # Metrics (foreground-only: DiceScore uses include_background=False, others use ignore_index=0)
         self.val_metrics = MetricCollection({
-            'dice': Dice(num_classes=num_classes, average='macro'),
-            'precision': Precision(num_classes=num_classes, average='macro'),
-            'recall': Recall(num_classes=num_classes, average='macro'),
-            'specificity': Specificity(num_classes=num_classes, average='macro'),
-            'iou': JaccardIndex(num_classes=num_classes, average='macro'),
+            'dice': Dice(num_classes=num_classes, include_background=False),
+            'precision': Precision(num_classes=num_classes, average='macro', ignore_index=0),
+            'recall': Recall(num_classes=num_classes, average='macro', ignore_index=0),
+            'iou': JaccardIndex(num_classes=num_classes, average='macro', ignore_index=0),
         })
 
         # Test metrics (separate instance to avoid contamination)
         self.test_metrics = MetricCollection({
-            'dice': Dice(num_classes=num_classes, average='macro'),
-            'precision': Precision(num_classes=num_classes, average='macro'),
-            'recall': Recall(num_classes=num_classes, average='macro'),
-            'specificity': Specificity(num_classes=num_classes, average='macro'),
-            'iou': JaccardIndex(num_classes=num_classes, average='macro'),
+            'dice': Dice(num_classes=num_classes, include_background=False),
+            'precision': Precision(num_classes=num_classes, average='macro', ignore_index=0),
+            'recall': Recall(num_classes=num_classes, average='macro', ignore_index=0),
+            'iou': JaccardIndex(num_classes=num_classes, average='macro', ignore_index=0),
         })
 
         self.vessel_metrics = MetricCollection({
@@ -378,6 +376,9 @@ class SupervisedModel(L.LightningModule):
         self.log('val/loss', loss, prog_bar=True)
         self.log_dict({'val/' + k: v for k, v in general_metrics.items()}, prog_bar=True)
         self.log_dict({'val/' + k: v for k, v in vessel_metrics.items()}, prog_bar=False)
+        
+        # Explicitly log val/dice for monitoring (ensure it appears in log files)
+        self.log('val/dice', general_metrics['dice'], prog_bar=True, logger=True)
 
         # Log images to TensorBoard (specified samples only)
         if hasattr(self.hparams, 'log_image_enabled') and self.hparams.log_image_enabled:

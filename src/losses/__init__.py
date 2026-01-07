@@ -23,6 +23,7 @@ from .l1_loss import L1Loss
 from .l2_loss import L2Loss
 from .l2_dice_reg_loss import L2DiceRegLoss
 from .flow_reg_dice_loss import FlowRegDiceLoss
+from .flow_sauna_fm_loss import FlowSaunaFMLoss
 from .topo_loss import TopoLoss
 from .flow_matching_loss import FlowMatchingLoss
 from .huber_loss import HuberLoss
@@ -37,6 +38,7 @@ __all__ = [
     'L2Loss',
     'L2DiceRegLoss',
     'FlowRegDiceLoss',
+    'FlowSaunaFMLoss',
     'TopoLoss',
     'FlowMatchingLoss',
     'HuberLoss',

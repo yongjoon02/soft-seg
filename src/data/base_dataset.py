@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 import lightning as L
 import torch
+from PIL import Image
 from monai.data import PILReader
 from monai.transforms import (
     Compose,
@@ -57,20 +58,34 @@ class BaseOCTDataset(Dataset, ABC):
         """
         pass
 
-    def __init__(self, path: str, augmentation: bool = False, crop_size: int = 128,
-                 num_samples_per_image: int = 1) -> None:
+    def __init__(
+        self,
+        path: str,
+        augmentation: bool = False,
+        crop_size: int = 128,
+        num_samples_per_image: int = 1,
+        use_sliding_window: bool = False,
+        sliding_window_overlap: float = 0.25,
+    ) -> None:
         """
         Args:
             path: Dataset split path (e.g., data/OCTA500_3M/train)
             augmentation: Whether to apply data augmentation (True for training only)
             crop_size: Random crop size (roi_size)
             num_samples_per_image: Number of samples per image (default: 1)
+            use_sliding_window: If True, use deterministic sliding window crops
+            sliding_window_overlap: Overlap ratio between windows (0~1)
         """
         super().__init__()
         self.path = path
         self.augmentation = augmentation
         self.crop_size = crop_size
         self.num_samples_per_image = num_samples_per_image
+        self.use_sliding_window = use_sliding_window
+        self.sliding_window_overlap = sliding_window_overlap
+
+        if self.use_sliding_window and self.num_samples_per_image > 1:
+            raise ValueError("sliding window mode does not support num_samples_per_image > 1")
 
         # Get fields from subclass
         self.fields = self.get_data_fields()
@@ -121,6 +136,11 @@ class BaseOCTDataset(Dataset, ABC):
         # Create transforms
         self._create_transforms()
 
+        # Precompute sliding window indices if enabled
+        self._sliding_window_indices = None
+        if self.use_sliding_window:
+            self._sliding_window_indices = self._build_sliding_windows()
+
     def _create_transforms(self):
         """Create default and augmentation transforms based on data fields."""
         keys = self.fields
@@ -156,7 +176,13 @@ class BaseOCTDataset(Dataset, ABC):
         self.default_transforms = Compose(unique_scale_transforms)
 
         # Augmentation transforms
-        if self.num_samples_per_image > 1:
+        if self.use_sliding_window:
+            self.augmentation_transforms = Compose([
+                RandFlipd(keys=keys, spatial_axis=0, prob=0.5),
+                RandFlipd(keys=keys, spatial_axis=1, prob=0.5),
+                RandRotate90d(keys=keys, prob=0.5, max_k=3),
+            ])
+        elif self.num_samples_per_image > 1:
             self.augmentation_transforms = Compose([
                 RandFlipd(keys=keys, spatial_axis=0, prob=0.5),
                 RandFlipd(keys=keys, spatial_axis=1, prob=0.5),
@@ -188,6 +214,8 @@ class BaseOCTDataset(Dataset, ABC):
         
         If num_samples_per_image > 1, returns len(data) * num_samples_per_image
         """
+        if self.use_sliding_window:
+            return len(self._sliding_window_indices)
         if self.augmentation and self.num_samples_per_image > 1:
             return len(self.data) * self.num_samples_per_image
         return len(self.data)
@@ -202,8 +230,10 @@ class BaseOCTDataset(Dataset, ABC):
         Returns:
             dict: Dictionary containing image, labels, and metadata
         """
-        # Map index to actual data index when using multiple samples per image
-        if self.augmentation and self.num_samples_per_image > 1:
+        # Map index to actual data index
+        if self.use_sliding_window:
+            actual_index, win_top, win_left, win_h, win_w = self._sliding_window_indices[index]
+        elif self.augmentation and self.num_samples_per_image > 1:
             actual_index = index // self.num_samples_per_image
         else:
             actual_index = index
@@ -232,6 +262,11 @@ class BaseOCTDataset(Dataset, ABC):
                 sample_idx = index % self.num_samples_per_image
                 data = data[sample_idx]
 
+        if self.use_sliding_window:
+            data = self._crop_data(data, win_top, win_left, win_h, win_w)
+            if "name" in data:
+                data["name"] = f"{data['name']}@win_{win_top}_{win_left}"
+
         # 기본 geometry가 없으면 hard label을 geometry로 제공 (flow/확장 모델 호환용)
         if 'geometry' not in data and 'label' in data:
             data['geometry'] = data['label'].float()
@@ -247,6 +282,50 @@ class BaseOCTDataset(Dataset, ABC):
             data['coordinate'] = torch.stack([xx, yy], dim=0)
 
         return data
+
+    def _build_sliding_windows(self) -> list[tuple[int, int, int, int, int]]:
+        indices: list[tuple[int, int, int, int, int]] = []
+        overlap = float(self.sliding_window_overlap)
+        overlap = max(0.0, min(0.9, overlap))
+        stride = max(1, int(self.crop_size * (1.0 - overlap)))
+
+        for idx, item in enumerate(self.data):
+            image_path = item.get("image")
+            with Image.open(image_path) as img:
+                width, height = img.size
+
+            win_h = min(self.crop_size, height)
+            win_w = min(self.crop_size, width)
+            ys = self._compute_window_starts(height, win_h, stride)
+            xs = self._compute_window_starts(width, win_w, stride)
+            for y in ys:
+                for x in xs:
+                    indices.append((idx, y, x, win_h, win_w))
+        return indices
+
+    @staticmethod
+    def _compute_window_starts(size: int, window: int, stride: int) -> list[int]:
+        if size <= window:
+            return [0]
+        starts = list(range(0, size - window + 1, stride))
+        last = size - window
+        if starts[-1] != last:
+            starts.append(last)
+        return starts
+
+    @staticmethod
+    def _crop_data(data: dict, top: int, left: int, height: int, width: int) -> dict:
+        cropped = {}
+        for key, value in data.items():
+            if torch.is_tensor(value):
+                if value.dim() == 3:
+                    cropped[key] = value[:, top:top + height, left:left + width]
+                    continue
+                if value.dim() == 2:
+                    cropped[key] = value[top:top + height, left:left + width]
+                    continue
+            cropped[key] = value
+        return cropped
 
 
 class BaseOCTDataModule(L.LightningDataModule, ABC):
@@ -283,8 +362,18 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
         """
         pass
 
-    def __init__(self, train_dir, val_dir, test_dir, crop_size, train_bs=8,
-                 num_samples_per_image=1, name="base"):
+    def __init__(
+        self,
+        train_dir,
+        val_dir,
+        test_dir,
+        crop_size,
+        train_bs=8,
+        num_samples_per_image=1,
+        use_sliding_window: bool = False,
+        sliding_window_overlap: float = 0.25,
+        name="base",
+    ):
         """
         Args:
             train_dir: Training data path (may be None for special cases)
@@ -302,6 +391,8 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
         self.crop_size = crop_size
         self.train_bs = train_bs
         self.num_samples_per_image = num_samples_per_image
+        self.use_sliding_window = use_sliding_window
+        self.sliding_window_overlap = sliding_window_overlap
         self.name = name
 
         self.save_hyperparameters()
@@ -333,7 +424,9 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
             self.val_dir,
             augmentation=False,
             crop_size=self.crop_size,
-            num_samples_per_image=1  # val/test always use 1 sample
+            num_samples_per_image=1,  # val/test always use 1 sample
+            use_sliding_window=self.use_sliding_window,
+            sliding_window_overlap=self.sliding_window_overlap,
         )
 
     def create_test_dataset(self):
@@ -342,7 +435,9 @@ class BaseOCTDataModule(L.LightningDataModule, ABC):
             self.test_dir,
             augmentation=False,
             crop_size=self.crop_size,
-            num_samples_per_image=1  # val/test always use 1 sample
+            num_samples_per_image=1,  # val/test always use 1 sample
+            use_sliding_window=self.use_sliding_window,
+            sliding_window_overlap=self.sliding_window_overlap,
         )
 
     def _create_dataloader(self, dataset, batch_size: int, shuffle: bool = False):

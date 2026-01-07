@@ -49,10 +49,19 @@ class XCADataset(BaseOCTDataset):
         num_samples_per_image: int = 1, 
         label_subdir: str = 'label',
         use_sauna_transform: bool = False,  # SAUNA 동적 변환 사용 여부
+        use_sliding_window: bool = False,
+        sliding_window_overlap: float = 0.25,
     ) -> None:
         self.label_subdir = label_subdir
         self.use_sauna_transform = use_sauna_transform  # SAUNA 변환 플래그
-        super().__init__(path, augmentation, crop_size, num_samples_per_image)
+        super().__init__(
+            path,
+            augmentation,
+            crop_size,
+            num_samples_per_image,
+            use_sliding_window=use_sliding_window,
+            sliding_window_overlap=sliding_window_overlap,
+        )
 
     def get_data_fields(self) -> list[str]:
         """
@@ -133,7 +142,13 @@ class XCADataset(BaseOCTDataset):
         # Augmentation transforms 재정의 (label_key 동적 설정)
         from monai.transforms import RandCropByPosNegLabeld, RandFlipd, RandRotate90d, RandSpatialCropd
         
-        if self.num_samples_per_image > 1:
+        if self.use_sliding_window:
+            self.augmentation_transforms = Compose([
+                RandFlipd(keys=keys, spatial_axis=0, prob=0.5),
+                RandFlipd(keys=keys, spatial_axis=1, prob=0.5),
+                RandRotate90d(keys=keys, prob=0.5, max_k=3),
+            ] + xray_augments)
+        elif self.num_samples_per_image > 1:
             # RandCropByPosNegLabeld는 내부적으로 threshold를 사용하여 pos/neg 영역 찾기
             # Soft label을 그대로 사용하되, cropping을 위한 mask 생성용으로만 binarization 사용
             self.augmentation_transforms = Compose([
@@ -298,6 +313,8 @@ class XCADataModule(BaseOCTDataModule):
         num_samples_per_image: int = 1,
         label_subdir: str = 'label',
         use_sauna_transform: bool = False,  # SAUNA 동적 변환 사용 여부
+        use_sliding_window: bool = False,
+        sliding_window_overlap: float = 0.25,
     ):
         """XCA 데이터 모듈 초기화
         
@@ -320,6 +337,8 @@ class XCADataModule(BaseOCTDataModule):
             crop_size=crop_size,
             train_bs=train_bs,
             num_samples_per_image=num_samples_per_image,
+            use_sliding_window=use_sliding_window,
+            sliding_window_overlap=sliding_window_overlap,
             name='xca'
         )
 
@@ -332,6 +351,8 @@ class XCADataModule(BaseOCTDataModule):
             num_samples_per_image=self.num_samples_per_image,
             label_subdir=self.label_subdir,
             use_sauna_transform=self.use_sauna_transform,
+            use_sliding_window=False,
+            sliding_window_overlap=self.sliding_window_overlap,
         )
     
     def create_val_dataset(self):
@@ -343,6 +364,8 @@ class XCADataModule(BaseOCTDataModule):
             num_samples_per_image=1,
             label_subdir=self.label_subdir,
             use_sauna_transform=self.use_sauna_transform,
+            use_sliding_window=self.use_sliding_window,
+            sliding_window_overlap=self.sliding_window_overlap,
         )
     
     def create_test_dataset(self):
@@ -356,6 +379,8 @@ class XCADataModule(BaseOCTDataModule):
             num_samples_per_image=1,
             label_subdir=self.label_subdir,
             use_sauna_transform=self.use_sauna_transform,
+            use_sliding_window=self.use_sliding_window,
+            sliding_window_overlap=self.sliding_window_overlap,
         )
 
 
@@ -372,6 +397,8 @@ class XCA_DataModule(XCADataModule):
         num_samples_per_image: int = 1,
         label_subdir: str = 'label',
         use_sauna_transform: bool = False,
+        use_sliding_window: bool = False,
+        sliding_window_overlap: float = 0.25,
     ):
         super().__init__(
             train_dir=train_dir,
@@ -382,6 +409,8 @@ class XCA_DataModule(XCADataModule):
             num_samples_per_image=num_samples_per_image,
             label_subdir=label_subdir,
             use_sauna_transform=use_sauna_transform,
+            use_sliding_window=use_sliding_window,
+            sliding_window_overlap=sliding_window_overlap,
         )
 
 

@@ -2,7 +2,7 @@
 model:
   arch_name: berdiff
   image_size: 320
-  dim: 64
+  dim: 40
   timesteps: 100
   learning_rate: 0.0002
   weight_decay: 0.00001
@@ -11,7 +11,7 @@ model:
   num_ensemble: 5
   use_ema: true
   ema_decay: 0.9999
-  log_image_enabled: true
+  log_image_enabled: false
   log_image_names:
     - '0000.png'
     - '0010.png'
@@ -30,7 +30,7 @@ trainer:
   max_epochs: 500
   accelerator: gpu
   devices: 1
-  precision: 16-mixed
+  precision: 32-true
   enable_progress_bar: false
   check_val_every_n_epoch: 25
   accumulate_grad_batches: 2

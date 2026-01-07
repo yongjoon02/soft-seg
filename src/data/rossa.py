@@ -31,7 +31,9 @@ class ROSSADataModule(BaseOCTDataModule):
                  crop_size=128,
                  train_bs=8,
                  num_samples_per_image=1,
-                 use_sam: bool = False):
+                 use_sam: bool = False,
+                 use_sliding_window: bool = False,
+                 sliding_window_overlap: float = 0.25):
         """
         Args:
             train_manual_dir: Manual annotation training data
@@ -56,6 +58,8 @@ class ROSSADataModule(BaseOCTDataModule):
             crop_size=crop_size,
             train_bs=train_bs,
             num_samples_per_image=num_samples_per_image,
+            use_sliding_window=use_sliding_window,
+            sliding_window_overlap=sliding_window_overlap,
             name='rossa'
         )
 
@@ -66,7 +70,9 @@ class ROSSADataModule(BaseOCTDataModule):
             self.train_manual_dir,
             augmentation=True,
             crop_size=self.crop_size,
-            num_samples_per_image=self.num_samples_per_image
+            num_samples_per_image=self.num_samples_per_image,
+            use_sliding_window=False,
+            sliding_window_overlap=self.sliding_window_overlap,
         )
 
         print("ROSSA Dataset loaded:")
@@ -78,7 +84,9 @@ class ROSSADataModule(BaseOCTDataModule):
                 self.train_sam_dir,
                 augmentation=True,
                 crop_size=self.crop_size,
-                num_samples_per_image=self.num_samples_per_image
+                num_samples_per_image=self.num_samples_per_image,
+                use_sliding_window=False,
+                sliding_window_overlap=self.sliding_window_overlap,
             )
             # Concatenate manual and SAM datasets
             combined_dataset = ConcatDataset([train_manual_dataset, train_sam_dataset])
@@ -101,7 +109,9 @@ class ROSSA_DataModule(ROSSADataModule):
                  crop_size=128,
                  train_bs=8,
                  num_samples_per_image=1,
-                 use_sam: bool = False):
+                 use_sam: bool = False,
+                 use_sliding_window: bool = False,
+                 sliding_window_overlap: float = 0.25):
         super().__init__(
             train_manual_dir=train_manual_dir,
             train_sam_dir=train_sam_dir,
@@ -110,7 +120,9 @@ class ROSSA_DataModule(ROSSADataModule):
             crop_size=crop_size,
             train_bs=train_bs,
             num_samples_per_image=num_samples_per_image,
-            use_sam=use_sam
+            use_sam=use_sam,
+            use_sliding_window=use_sliding_window,
+            sliding_window_overlap=sliding_window_overlap,
         )
 
 

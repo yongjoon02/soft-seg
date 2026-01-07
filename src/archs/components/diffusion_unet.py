@@ -686,7 +686,7 @@ class MedSegDiffUNet(nn.Module):
         self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
         self.final_conv = nn.Conv2d(dim, mask_channels, 1)
 
-    def forward(self, x, time, cond):
+    def forward(self, x, time, cond, return_features: bool = False):
         skip_connect_c = self.skip_connect_condition_fmap
 
         x = self.init_conv(x)
@@ -727,7 +727,10 @@ class MedSegDiffUNet(nn.Module):
 
         x = torch.cat((x, r), dim=1)
         x = self.final_res_block(x, t)
-        return self.final_conv(x)
+        out = self.final_conv(x)
+        if return_features:
+            return out, x
+        return out
 
 
 

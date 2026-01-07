@@ -1,5 +1,6 @@
 """Training runner - config-based training logic."""
 
+import math
 import os
 from pathlib import Path
 from typing import Any, Dict
@@ -7,6 +8,7 @@ from typing import Any, Dict
 import lightning as L
 import torch
 from lightning.pytorch.callbacks import (
+    EarlyStopping,
     LearningRateMonitor,
     ModelCheckpoint,
     StochasticWeightAveraging,
@@ -223,6 +225,10 @@ class TrainRunner:
             kwargs['label_subdir'] = self.data_cfg['label_subdir']
         if 'use_sauna_transform' in self.data_cfg:
             kwargs['use_sauna_transform'] = self.data_cfg['use_sauna_transform']
+        if 'use_sliding_window' in self.data_cfg:
+            kwargs['use_sliding_window'] = self.data_cfg['use_sliding_window']
+        if 'sliding_window_overlap' in self.data_cfg:
+            kwargs['sliding_window_overlap'] = self.data_cfg['sliding_window_overlap']
 
         return DataModuleClass(**kwargs)
 
@@ -241,6 +247,31 @@ class TrainRunner:
 
         # FlowModel 지원: registry task가 flow이면 FlowModel 사용
         if self.model_info.task == 'flow':
+            if self.model_name in {'medsegdiff_flow_soft2hard', 'medsegdiff_flow_multitask'}:
+                from src.archs.flow_soft2hard_model import FlowSoft2HardModel
+                return FlowSoft2HardModel(
+                    **common_args,
+                    patch_plan=self.model_cfg.get('patch_plan', None),
+                    dim=self.model_cfg.get('dim', 32),
+                    timesteps=self.model_cfg.get('timesteps', 15),
+                    sigma=self.model_cfg.get('sigma', 0.25),
+                    num_ensemble=self.model_cfg.get('num_ensemble', 1),
+                    log_image_enabled=self.model_cfg.get('log_image_enabled', False),
+                    log_image_names=self.model_cfg.get('log_image_names', None),
+                    model_channels=self.model_cfg.get('model_channels', 32),
+                    channel_mult=self.model_cfg.get('channel_mult', [1,2,4,8]),
+                    channel_mult_emb=self.model_cfg.get('channel_mult_emb', 4),
+                    num_blocks=self.model_cfg.get('num_blocks', 3),
+                    attn_resolutions=self.model_cfg.get('attn_resolutions', [16,16,8,8]),
+                    dropout=self.model_cfg.get('dropout', 0.0),
+                    label_dim=self.model_cfg.get('label_dim', 0),
+                    augment_dim=self.model_cfg.get('augment_dim', 0),
+                    flow_weight=self.model_cfg.get('flow_weight', 1.0),
+                    hard_weight=self.model_cfg.get('hard_weight', 0.2),
+                    soft_weight=self.model_cfg.get('soft_weight', 0.2),
+                    soft2hard_weight=self.model_cfg.get('soft2hard_weight', 0.1),
+                    soft_sharpness=self.model_cfg.get('soft_sharpness', 10.0),
+                )
             from src.archs.flow_model import FlowModel
             return FlowModel(
                 **common_args,
@@ -350,6 +381,18 @@ class TrainRunner:
             ),
             LearningRateMonitor(logging_interval='epoch'),
         ]
+        val_interval = self.trainer_cfg.get('check_val_every_n_epoch', 5)
+        patience_epochs = self.trainer_cfg.get('early_stopping_patience_epochs', 150)
+        patience = max(1, math.ceil(patience_epochs / val_interval))
+        callbacks.append(
+            EarlyStopping(
+                monitor='val/dice',
+                mode='max',
+                patience=patience,
+                min_delta=0.0,
+                verbose=True,
+            )
+        )
 
         if not self.debug:
             callbacks.append(
@@ -398,6 +441,7 @@ class TrainRunner:
             precision=precision_str,
             callbacks=callbacks,
             logger=logger,
+            enable_progress_bar=self.trainer_cfg.get('enable_progress_bar', True),
             log_every_n_steps=self.trainer_cfg.get('log_every_n_steps', 50),
             check_val_every_n_epoch=self.trainer_cfg.get('check_val_every_n_epoch', 5),
             gradient_clip_val=self.trainer_cfg.get('gradient_clip_val', None),

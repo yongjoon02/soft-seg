@@ -10665,5 +10665,1445 @@
     },
     "best_checkpoint": "experiments/dhariwal_concat_unet/xca/dhariwal_concat_unet_xca_20251231_131350/checkpoints/best.ckpt",
     "tag": null
+  },
+  "berdiff_xca_20260102_104931": {
+    "id": "berdiff_xca_20260102_104931",
+    "model": "berdiff",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "berdiff",
+        "image_size": 320,
+        "dim": 40,
+        "timesteps": 100,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "experiment_name": "berdiff",
+        "data_name": "xca",
+        "num_ensemble": 5,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 4,
+        "num_samples_per_image": 16
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-02T10:49:31.100389",
+    "dir": "experiments/berdiff/xca/berdiff_xca_20260102_104931",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "segdiff_xca_20260102_105349": {
+    "id": "segdiff_xca_20260102_105349",
+    "model": "segdiff",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "segdiff",
+        "image_size": 320,
+        "dim": 40,
+        "timesteps": 100,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "experiment_name": "segdiff",
+        "data_name": "xca",
+        "num_ensemble": 5,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "loss_type": "mse"
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 8,
+        "num_samples_per_image": 16
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "log_every_n_steps": 10,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-02T10:53:49.906151",
+    "dir": "experiments/segdiff/xca/segdiff_xca_20260102_105349",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "CUDA out of memory. Tried to allocate 126.00 MiB. GPU 0 has a total capacity of 47.41 GiB of which 100.38 MiB is free. Process 583902 has 11.07 GiB memory in use. Including non-PyTorch memory, this process has 36.21 GiB memory in use. Of the allocated memory 35.53 GiB is allocated by PyTorch, and 354.74 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)"
+  },
+  "medsegdiff_flow_xca_20260102_111643": {
+    "id": "medsegdiff_flow_xca_20260102_111643",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.1,
+            "use_hard_ut": true
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-02T11:16:43.231652",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260102_111643",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "berdiff_xca_20260102_122659": {
+    "id": "berdiff_xca_20260102_122659",
+    "model": "berdiff",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "berdiff",
+        "image_size": 320,
+        "dim": 40,
+        "timesteps": 100,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "experiment_name": "berdiff",
+        "data_name": "xca",
+        "num_ensemble": 5,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "log_image_enabled": true,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ]
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 4,
+        "num_samples_per_image": 16
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 2,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-02T12:26:59.153415",
+    "dir": "experiments/berdiff/xca/berdiff_xca_20260102_122659",
+    "status": "completed",
+    "final_metrics": {
+      "val/dice": 0.8020440936088562,
+      "val/iou": 0.8718155026435852,
+      "val/precision": 0.9341651201248169,
+      "val/recall": 0.9228509664535522,
+      "val/specificity": 0.9228509664535522,
+      "val/betti_0_error": 11.100000381469727,
+      "val/betti_1_error": 102.3499984741211,
+      "val/cldice": 0.8417891263961792
+    },
+    "best_checkpoint": "experiments/berdiff/xca/berdiff_xca_20260102_122659/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20260105_102323": {
+    "id": "medsegdiff_flow_xca_20260105_102323",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.1,
+            "use_hard_ut": true
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 10,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T10:23:23.799447",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260105_102323",
+    "status": "completed",
+    "final_metrics": {},
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20260105_105500": {
+    "id": "medsegdiff_flow_xca_20260105_105500",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.1,
+            "use_hard_ut": true
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T10:55:00.364570",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260105_105500",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20260105_105742": {
+    "id": "medsegdiff_flow_xca_20260105_105742",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.1,
+            "use_hard_ut": true
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T10:57:42.520864",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260105_105742",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "CUDA error: unspecified launch failure\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+  },
+  "medsegdiff_flow_soft2hard_xca_20260105_130114": {
+    "id": "medsegdiff_flow_soft2hard_xca_20260105_130114",
+    "model": "medsegdiff_flow_soft2hard",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow_soft2hard",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff_soft2hard",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "flow_weight": 1.0,
+        "hard_weight": 1.0,
+        "soft_weight": 0.2,
+        "soft2hard_weight": 0.1,
+        "soft_sharpness": 10.0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T13:01:14.152097",
+    "dir": "experiments/medsegdiff_flow_soft2hard/xca/medsegdiff_flow_soft2hard_xca_20260105_130114",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20260105_132607": {
+    "id": "medsegdiff_flow_xca_20260105_132607",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.1,
+            "use_hard_ut": true
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T13:26:07.738688",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260105_132607",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_soft2hard_xca_20260105_134020": {
+    "id": "medsegdiff_flow_soft2hard_xca_20260105_134020",
+    "model": "medsegdiff_flow_soft2hard",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow_soft2hard",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff_soft2hard",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "flow_weight": 1.0,
+        "hard_weight": 1.0,
+        "soft_weight": 0.2,
+        "soft2hard_weight": 0.1,
+        "soft_sharpness": 10.0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      },
+      "resume": "experiments/medsegdiff_flow_soft2hard/xca/medsegdiff_flow_soft2hard_xca_20260105_130114/checkpoints/last.ckpt"
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T13:40:20.441649",
+    "dir": "experiments/medsegdiff_flow_soft2hard/xca/medsegdiff_flow_soft2hard_xca_20260105_134020",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20260105_134204": {
+    "id": "medsegdiff_flow_xca_20260105_134204",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.1,
+            "use_hard_ut": true
+          }
+        }
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T13:42:04.820487",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260105_134204",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "segdiff_xca_20260105_135210": {
+    "id": "segdiff_xca_20260105_135210",
+    "model": "segdiff",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "segdiff",
+        "image_size": 320,
+        "dim": 40,
+        "timesteps": 100,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "experiment_name": "segdiff",
+        "data_name": "xca",
+        "num_ensemble": 5,
+        "use_ema": true,
+        "ema_decay": 0.9999,
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "loss_type": "mse"
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "crop_size": 320,
+        "train_bs": 4,
+        "num_samples_per_image": 16
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "32-true",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "log_every_n_steps": 10,
+        "gradient_clip_val": 1.0
+      },
+      "resume": "experiments/segdiff/xca/segdiff_xca_20260102_125638/checkpoints/last.ckpt"
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T13:52:10.373851",
+    "dir": "experiments/segdiff/xca/segdiff_xca_20260105_135210",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_multitask_xca_20260105_174450": {
+    "id": "medsegdiff_flow_multitask_xca_20260105_174450",
+    "model": "medsegdiff_flow_multitask",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow_multitask",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff_multitask",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "flow_weight": 1.0,
+        "hard_weight": 1.0,
+        "soft_weight": 0.1,
+        "soft2hard_weight": 0.1,
+        "soft_sharpness": 10.0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T17:44:50.702402",
+    "dir": "experiments/medsegdiff_flow_multitask/xca/medsegdiff_flow_multitask_xca_20260105_174450",
+    "status": "failed",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null,
+    "error": "Given groups=1, weight of size [32, 2, 7, 7], expected input[4, 1, 320, 320] to have 2 channels, but got 1 channels instead"
+  },
+  "medsegdiff_flow_multitask_xca_20260105_174638": {
+    "id": "medsegdiff_flow_multitask_xca_20260105_174638",
+    "model": "medsegdiff_flow_multitask",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow_multitask",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff_multitask",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "flow_weight": 1.0,
+        "hard_weight": 1.0,
+        "soft_weight": 0.1,
+        "soft2hard_weight": 0.1,
+        "soft_sharpness": 10.0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T17:46:38.696933",
+    "dir": "experiments/medsegdiff_flow_multitask/xca/medsegdiff_flow_multitask_xca_20260105_174638",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_multitask_xca_20260105_174940": {
+    "id": "medsegdiff_flow_multitask_xca_20260105_174940",
+    "model": "medsegdiff_flow_multitask",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow_multitask",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff_multitask",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "flow_weight": 1.0,
+        "hard_weight": 1.0,
+        "soft_weight": 0.1,
+        "soft2hard_weight": 0.1,
+        "soft_sharpness": 10.0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-05T17:49:40.403975",
+    "dir": "experiments/medsegdiff_flow_multitask/xca/medsegdiff_flow_multitask_xca_20260105_174940",
+    "status": "completed",
+    "final_metrics": {
+      "val/dice": 0.7889963388442993,
+      "val/iou": 0.8637403249740601,
+      "val/precision": 0.9454318284988403,
+      "val/recall": 0.9035056233406067,
+      "val/specificity": 0.9035056233406067,
+      "val/betti_0_error": 16.799999237060547,
+      "val/betti_1_error": 100.94999694824219,
+      "val/cldice": 0.8187143206596375,
+      "val/reconstruction_loss": 0.06231337785720825
+    },
+    "best_checkpoint": "experiments/medsegdiff_flow_multitask/xca/medsegdiff_flow_multitask_xca_20260105_174940/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20260106_143543": {
+    "id": "medsegdiff_flow_xca_20260106_143543",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.005,
+            "use_hard_ut": true,
+            "dice_scale": 0.1
+          }
+        },
+        "use_pcgrad": true
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-06T14:35:43.488230",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260106_143543",
+    "status": "completed",
+    "final_metrics": {
+      "val/reconstruction_loss": 0.07591017335653305,
+      "val/dice": 0.7870460748672485,
+      "val/iou": 0.8600227236747742,
+      "val/precision": 0.9558840990066528,
+      "val/recall": 0.8916524648666382,
+      "val/specificity": 0.8916524648666382,
+      "val/betti_0_error": 29.399999618530273,
+      "val/betti_1_error": 116.94999694824219,
+      "val/cldice": 0.8071779012680054
+    },
+    "best_checkpoint": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260106_143543/checkpoints/best.ckpt",
+    "tag": null
+  },
+  "medsegdiff_flow_multitask_xca_20260107_093444": {
+    "id": "medsegdiff_flow_multitask_xca_20260107_093444",
+    "model": "medsegdiff_flow_multitask",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow_multitask",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff_multitask",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "flow_weight": 1.0,
+        "hard_weight": 1.0,
+        "soft_weight": 0.1,
+        "soft2hard_weight": 0.1,
+        "soft_sharpness": 10.0
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 8,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": true,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-07T09:34:44.221302",
+    "dir": "experiments/medsegdiff_flow_multitask/xca/medsegdiff_flow_multitask_xca_20260107_093444",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
+  },
+  "medsegdiff_flow_xca_20260107_100117": {
+    "id": "medsegdiff_flow_xca_20260107_100117",
+    "model": "medsegdiff_flow",
+    "dataset": "xca",
+    "config": {
+      "model": {
+        "arch_name": "medsegdiff_flow",
+        "image_size": 320,
+        "patch_plan": [
+          [
+            320,
+            1
+          ]
+        ],
+        "dim": 32,
+        "timesteps": 30,
+        "num_ensemble": 5,
+        "sigma": 0.25,
+        "learning_rate": 0.0002,
+        "weight_decay": 1e-05,
+        "num_classes": 2,
+        "experiment_name": "flow_model_sauna_medsegdiff",
+        "data_name": "xca",
+        "log_image_enabled": false,
+        "log_image_names": [
+          "0000.png",
+          "0010.png",
+          "0019.png"
+        ],
+        "model_channels": 32,
+        "channel_mult": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "channel_mult_emb": 4,
+        "num_blocks": 3,
+        "attn_resolutions": [
+          16,
+          16,
+          8,
+          8
+        ],
+        "dropout": 0.0,
+        "label_dim": 0,
+        "augment_dim": 0,
+        "loss": {
+          "name": "flow_sauna_fm",
+          "params": {
+            "alpha": 2.0,
+            "lambda_geo": 0.001,
+            "use_hard_ut": true,
+            "dice_scale": 0.1
+          }
+        },
+        "use_pcgrad": true
+      },
+      "data": {
+        "name": "xca",
+        "train_dir": "data/xca_full/train",
+        "val_dir": "data/xca_full/val",
+        "test_dir": "data/xca_full/test",
+        "train_bs": 6,
+        "image_size": 320,
+        "num_samples_per_image": 4,
+        "use_sauna_transform": true
+      },
+      "trainer": {
+        "max_epochs": 500,
+        "accelerator": "gpu",
+        "devices": 1,
+        "precision": "16-mixed",
+        "enable_progress_bar": false,
+        "check_val_every_n_epoch": 25,
+        "accumulate_grad_batches": 8,
+        "gradient_clip_val": 1.0
+      }
+    },
+    "git_hash": "8b80dccf88db582ffdc519c46b3240e7bf18aa8b",
+    "git_branch": "main",
+    "created_at": "2026-01-07T10:01:17.513077",
+    "dir": "experiments/medsegdiff_flow/xca/medsegdiff_flow_xca_20260107_100117",
+    "status": "running",
+    "final_metrics": null,
+    "best_checkpoint": null,
+    "tag": null
   }
 }
